@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+# Ignora TUDO em data/ exceto o minerador.db — ele é versionado de propósito,
+# é o estado (dedup, histórico, reciclagem) que o job da nuvem persiste.
+data/*
+!data/minerador.db

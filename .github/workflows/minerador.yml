@@ -1,0 +1,71 @@
+name: minerador
+
+# Roda todo dia às 09:00 UTC = 06:00 America/Sao_Paulo.
+# Também dá pra disparar na mão em Actions -> minerador -> Run workflow.
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+# permite ao job commitar o data/minerador.db de volta no repo
+permissions:
+  contents: write
+
+concurrency:
+  group: minerador
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      # ritmo mais devagar na nuvem (IP de datacenter = bloqueio mais fácil)
+      MINERADOR_TABS: "1"
+      MINERADOR_DELAY: "3.0,6.5"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: instala dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: minera (até 20 validadas -> Notion)
+        run: python -m minerador run
+        continue-on-error: true
+
+      - name: pausa
+        run: sleep 90
+
+      - name: recalc (contadores + TENDÊNCIA)
+        run: python -m minerador recalc
+        continue-on-error: true
+
+      - name: enxuga o banco
+        run: python -m minerador prune
+
+      - name: commita o estado
+        run: |
+          git config user.name  "minerador-bot"
+          git config user.email "minerador-bot@users.noreply.github.com"
+          git add data/minerador.db
+          git commit -m "estado: $(date -u '+%Y-%m-%d %H:%M UTC')" || echo "nada mudou"
+          git pull --rebase --autostash || true
+          git push || echo "push falhou (tenta na próxima)"
+
+      - name: guarda os logs de rejeição (auditoria)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rejeicoes-${{ github.run_number }}
+          path: data/raw/reject_*.txt
+          if-no-files-found: ignore
+          retention-days: 14

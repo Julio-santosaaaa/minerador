@@ -1,0 +1,203 @@
+# Países (ISO-2): América do Sul + México + Espanha + EUA.
+# Roteamento por idioma em minerador/lang.py:
+#   PT preço/R$  -> BR            PT formato (ebook/planilha/...) -> BR, PT
+#   ES           -> MX CO PE CL AR ES        EN -> US        universais -> todos
+countries:
+  - BR
+  - PT
+  - MX
+  - CO
+  - PE
+  - CL
+  - AR
+  - ES
+  - US
+
+active_status: active          # active | inactive | all
+
+# Reciclagem: oferta que saiu do Notion (você apagou) OU que não é tocada há
+# `recycle_days` dias volta a poder ser minerada. Impede o estoque de secar.
+recycle_days: 15
+
+# Teto de "low ticket" — o filtro forte lê o preço na página de vendas e converte
+# pra BRL com câmbio do dia (minerador/fx.py). Acima disso: rejeita.
+price_ceiling_brl: 97
+
+# Quantas ofertas NOVAS (nunca vistas antes) cada rodada tenta achar.
+daily_target: 20
+
+# Quantas ofertas cada rodada MANDA pro Notion (novas desta rodada + backlog
+# de rodadas anteriores que ainda não subiu, ranqueadas por calor).
+sync_target: 20
+
+# Palavras-chave por "janela". A rodada roda janela após janela (girando a lista)
+# até bater o daily_target, acabar as palavras-chave, ou estourar o tempo limite.
+keyword_window: 8
+run_deadline_min: 110          # tempo máximo de uma rodada (min) — teto de segurança
+                               # (minera até 20 validadas; só para antes se estourar isto)
+
+# Uma oferta precisa de ENTRE min_ads e max_ads anúncios ATIVOS.
+min_ads: 9
+max_ads: 99
+# Teto do passe de fallback. IGUAL a max_ads = SEM fallback acima de 99 anúncios
+# (Julio quer ESTRITO 9-99; se faltar pras 20, completa só com o backlog).
+fallback_max_ads: 99
+
+infoproduct_only: true         # só mantém o que parece infoproduto low ticket
+
+# Verificação de contagem abrindo a biblioteca do anunciante:
+#   always     - sempre abre a página pra contar (mais lento, mais preciso)
+#   borderline - só abre quando a amostra da busca ficou ABAIXO de min_ads.
+#                Se a busca já mostrou 10+ ativos, confia e não abre.  <- padrão
+#   never      - nunca abre; usa só a contagem da busca por palavra-chave
+verify_pages: true
+verify_mode: always   # A2: sempre abre a página do anunciante -> nº EXATO (campo `count`) + amostra p/ dias ativos
+
+# Domínios sempre ignorados (marketplaces, lojas de app)
+ignore_domains:
+  - play.google.com
+  - apps.apple.com
+  - itunes.apple.com
+  - chatgpt.com
+  - wa.me
+  - api.whatsapp.com
+  - shopee.com.br
+  - s.shopee.com.br
+  - mercadolivre.com.br
+  - mercadolibre.com
+  - amazon.com.br
+  - amazon.com
+  - magazineluiza.com.br
+  - aliexpress.com
+
+# Palavras-chave — enxutas e com foco em SINAL DE OFERTA low ticket.
+# Ordem importa: preço/oferta primeiro (a rodada para ao bater o daily_target).
+keywords:
+  # preço / oferta (PT-BR)
+  - de R$ 97 por
+  - de R$ 47 por
+  - de R$ 27 por
+  - de R$ 17 por
+  - de R$ 197 por
+  - por apenas R$ 10
+  - por apenas R$ 19,90
+  - por apenas R$ 27
+  - por apenas R$ 37
+  - apenas R$ 9,90
+  - pagamento no pix
+  - acesso imediato
+  - acesso vitalício
+  - pagamento único
+  - garantia de 7 dias
+  # formato de infoproduto digital barato — NÃO curso (PT-BR)
+  - ebook
+  - planilha
+  - planilha de
+  - apostila
+  - cardápio
+  - receitas
+  - planner digital
+  - planner 2026
+  - checklist
+  - pack de
+  - pack com
+  - template de
+  - bundle de templates
+  - modelos editáveis
+  - presets
+  - arquivo digital
+  - kit de artes
+  - figurinhas
+  # ES (ES/MX)
+  - acceso inmediato
+  - pago único
+  - acceso de por vida
+  - por solo $
+  - por solo $9
+  - recetario
+  - plantilla de
+  - plantillas editables
+  - pack de plantillas
+  # EN (US)
+  - instant access
+  - one time payment
+  - lifetime access
+  - digital download
+  - printable
+  - low ticket
+  - only $7
+  - only $17
+  - canva template
+  - notion template
+
+# Pool RESERVA — só entra quando as `keywords` acima esgotaram e ainda falta
+# pras 20 validadas. Mesmo roteamento por idioma.
+keywords_reserve:
+  # PT
+  - de R$ 67 por
+  - de R$ 37 por
+  - por apenas R$ 47
+  - só R$ 19
+  - 12x de
+  - kit digital
+  - artes editáveis
+  - pack de artes
+  - moldes para
+  - planilha excel
+  - planilha de gastos
+  - dashboard notion
+  - atividades para imprimir
+  - atividades pedagógicas
+  - mapas mentais
+  - caderno digital
+  - guia prático
+  - cardápio semanal
+  # ES
+  - descarga digital
+  - imprimible
+  - plantillas canva
+  - plantillas notion
+  - recetario saludable
+  - planificador digital
+  - agenda digital
+  - kit de plantillas
+  - calcomanías
+  - pdf editable
+  # EN
+  - printable planner
+  - canva bundle
+  - notion dashboard
+  - digital planner
+  - spreadsheet template
+  - meal plan
+  - resume template
+  - $9
+
+competitor_page_ids: []
+
+fetch:
+  headless: true
+  max_scrolls: 12              # busca por palavra-chave (mais = acha mais candidatos)
+  salespage_timeout_ms: 9000   # teto pra abrir cada página de vendas (filtro forte)
+  verify_scrolls: 6            # verificação de página do anunciante (amostra p/ dias ativos)
+  recalc_scrolls: 6            # recálculo diário: scrolls só pra garantir o anúncio mais antigo
+  results_per_keyword_cap: 250
+  delay_seconds: [1.6, 3.2]    # espera entre scrolls (maior = + lento, - risco de bloqueio)
+  parallel_tabs: 2             # 2 abas na MINERAÇÃO (recalc roda sempre com 1 aba)
+  proxy: null
+
+# Pesos do calor (uso interno: ranqueia quais ofertas entram no Notion primeiro).
+heat_weights:
+  days_active: 0.40
+  creative_count: 0.30
+  collation: 0.20
+  recency: 0.10
+min_days_active: 7
+
+notion:
+  # 🟧 OFERTAS LOW  ·  https://app.notion.com/p/45235b1644114ef492929061c6163647
+  database_id: "45235b1644114ef492929061c6163647"
+  # 📊 HISTÓRICO ANÚNCIOS  ·  https://app.notion.com/p/761e80c952e141f8839a45374cb0ff35
+  # (banco do tracker — 1 linha por oferta por dia; alimentado por `minerador recalc`)
+  history_database_id: "761e80c952e141f8839a45374cb0ff35"
+  history_data_source_id: "5a620575-765a-49c6-9763-4e5b5a54ad61"

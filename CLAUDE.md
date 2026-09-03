@@ -7,9 +7,10 @@ O Playwright abre a biblioteca pública, captura o GraphQL interno da Meta, agru
 em "ofertas", ranqueia por **calor** (sinal de que está escalando) e joga tudo num banco do
 Notion pra revisão manual.
 
-- Rodar: `scripts/run.sh run` (ou `.venv/bin/python -m minerador run`)
-- Teste sem Notion: `scripts/run.sh run --keyword "planilha financeira" --dry-run`
-- Config (palavras-chave, pesos do calor): `config.yaml`
-- Segredos: `.env` (`NOTION_TOKEN`, `NOTION_PARENT_PAGE_ID`)
-- Histórico local: `data/minerador.db` (SQLite)
-- Não é repo git. Passo a passo no `README.md`.
+- Rodar: `scripts/run.sh run` · tracker: `scripts/run.sh recalc` · acompanhar: `--progress`
+- Teste sem Notion: `scripts/run.sh run --target 3 --dry-run`
+- Config: `config.yaml` · segredos: `.env` (`NOTION_TOKEN`)
+- Estado: `data/minerador.db` (SQLite, versionado — dedup/histórico/reciclagem)
+- Filtro forte: `minerador/salespage.py` abre a página de vendas antes de validar
+- **Nuvem**: GitHub Actions roda todo dia 06h BRT (`.github/workflows/minerador.yml`).
+  Repo: github.com/Julio-santosaaaa/minerador (público). Setup: `SETUP-GITHUB.md`.

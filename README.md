@@ -38,42 +38,39 @@ biblioteca secar, sobe o que tem e reporta `BIBLIOTECA SECA`.
 Países: BR PT MX CO PE CL AR ES US. Reciclagem: oferta apagada do Notion, ou parada há
 `recycle_days`, volta pro pool (re-minerar atualiza a mesma página, não duplica).
 
-### Automático todo dia (Mac ligado)
+### Automático todo dia (nuvem)
 
-```bash
-MINERADOR_HOUR=8 scripts/install-cron.sh          # LaunchAgent diário 08:30
-scripts/install-cron.sh --uninstall               # remove
-launchctl kickstart -k gui/$(id -u)/com.julio.minerador   # rodar agora
-tail -f data/cron.log
-```
-Roda no horário **se o Mac estiver ligado e acordado**. Log em `data/cron.log`.
+Roda no **GitHub Actions** todo dia às 06:00 (Brasília), sem depender do Mac.
+Setup e como acompanhar: **[SETUP-GITHUB.md](SETUP-GITHUB.md)**.
 
 ## config.yaml
 
 | Campo | O quê |
 |---|---|
-| `countries` | ISO-2. Padrão `BR US ES MX`. |
-| `keywords` | lista única (PT+ES+EN). As rodadas **giram** a lista em janelas de `keyword_window`. |
-| `daily_target` | quantas ofertas **novas** cada rodada busca (padrão 20). |
-| `keyword_window` | palavras-chave por janela; a rodada roda janela após janela até bater o alvo. |
-| `min_ads` / `max_ads` | 10 e 99 — contagem **real** (verificada). |
-| `infoproduct_only` | filtro de infoproduto (checkout Hotmart/Kiwify/…, landing lovable/netlify/…, ou copy/domínio com cara de curso; corta dropship/nutra). |
-| `verify_pages` | abre `view_all_page_id` de cada candidato pra contar os ativos de verdade. |
+| `countries` | ISO-2. `BR PT MX CO PE CL AR ES US`. Roteamento por idioma em `minerador/lang.py`. |
+| `keywords` / `keywords_reserve` | principais + reserva (só entra se não fechar 20). Janelas de `keyword_window`. |
+| `daily_target` / `sync_target` | quantas validadas minerar / quantas mandar pro Notion (20). |
+| `min_ads` / `max_ads` | 9 e 99 — contagem **real** (verificada abrindo a biblioteca). |
+| `price_ceiling_brl` | teto de low ticket; o filtro forte lê o preço na página e converte (`minerador/fx.py`). |
+| `recycle_days` | oferta parada há N dias volta pro pool. |
+| `infoproduct_only` | filtro estágio 1 (domínio/copy). O estágio 2 (`minerador/salespage.py`) abre a página. |
+
+### Overrides por env (usados no job de nuvem)
+`MINERADOR_TABS`, `MINERADOR_DELAY` (`"3.0,6.5"`), `MINERADOR_HEADLESS`.
 
 ## Notion — 🟧 OFERTAS LOW
 
 <https://app.notion.com/p/45235b1644114ef492929061c6163647> · colunas: **OFERTA · PAÍS ·
-PALAVRA-CHAVE · NÍVEL · CALOR · NÚMERO DE ANÚNCIOS · DIAS ATIVOS · CÓPIAS DO CRIATIVO ·
-LINK PÁGINA DE VENDAS · BIBLIOTECA**.
+PALAVRA-CHAVE · NÚMERO DE ANÚNCIOS · DIAS ATIVOS · LINK PÁGINA DE VENDAS · BIBLIOTECA ·
+ÚLTIMA CHECAGEM · VARIAÇÃO ONTEM · HISTÓRICO · TENDÊNCIA · MINERADO EM**.
 
-⚠️ **Pra o script escrever sozinho**: abrir o banco no Notion → `•••` → **Conexões** →
-adicionar a integração do `NOTION_TOKEN`. Sem isso, a rodada salva no SQLite e você roda
-`scripts/run.sh sync` depois de conectar.
+A integração `NOTION_TOKEN` já está conectada ao banco. `recalc` cria a coluna
+**TENDÊNCIA** (🚀 ESCALANDO / 📈 SUBINDO / ➡️ ESTÁVEL / 📉 CAINDO / 💀 MORRENDO) sozinho.
 
-## Calor (1–10)
+## Calor (1–10, uso interno)
 
 `dias ativo` (0.40) · `nº de anúncios` (0.30) · `cópias do criativo` (0.20) ·
-`recência` (0.10). Reescalado pra 1–10. 1 anúncio só leva penalidade.
+`recência` (0.10). Só ordena quais ofertas sobem primeiro; não é coluna no Notion.
 
 ## Quando quebrar
 

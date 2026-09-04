@@ -57,6 +57,7 @@ class Config:
     notion_database_id: str = ""
     notion_history_database_id: str = ""
     notion_history_data_source_id: str = ""
+    notion_write_history_snapshots: bool = False
     notion_token: str = ""
 
     @classmethod
@@ -136,5 +137,6 @@ class Config:
             notion_database_id=str((raw.get("notion") or {}).get("database_id", "") or ""),
             notion_history_database_id=str((raw.get("notion") or {}).get("history_database_id", "") or ""),
             notion_history_data_source_id=str((raw.get("notion") or {}).get("history_data_source_id", "") or ""),
+            notion_write_history_snapshots=bool((raw.get("notion") or {}).get("write_history_snapshots", False)),
             notion_token=os.getenv("NOTION_TOKEN", ""),
         )

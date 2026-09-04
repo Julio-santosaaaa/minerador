@@ -191,7 +191,10 @@ def cmd_recalc(args) -> None:
     print(f"Recálculo {run_date} — {len(pages)} ofertas no Notion · scrolls={scrolls}")
 
     hist_db = cfg.notion_history_database_id
-    hist_today = {}   # snapshots no Notion desligados (Julio) — ver write_snapshots
+    hist_today = {}
+    if cfg.notion_write_history_snapshots and hist_db:
+        hist_today = _history_index(notion, hist_db, run_date,
+                                    cfg.notion_history_data_source_id or None)
 
     conn = store.connect(DB_PATH)
     RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -275,11 +278,11 @@ def cmd_recalc(args) -> None:
                     errors += 1
                 time.sleep(0.34)
 
-                # Snapshot diário no banco 📊 HISTÓRICO ANÚNCIOS: DESLIGADO
-                # (Julio pediu — "no Notion não precisa de snapshot"). O histórico
-                # continua no SQLite (offer_history) + na coluna HISTÓRICO do banco
-                # principal ("22→33→20"). Pra religar: setar `write_snapshots`.
-                write_snapshots = False
+                # Snapshot diário no banco 📊 HISTÓRICO ANÚNCIOS (alimenta o gráfico
+                # de linha). Liga/desliga em config.yaml → notion.write_history_snapshots.
+                # O histórico também fica no SQLite (offer_history) + coluna HISTÓRICO
+                # do banco principal ("22→33→20").
+                write_snapshots = cfg.notion_write_history_snapshots
                 if write_snapshots and hist_db:
                     hp = {
                         "Name": {"title": [{"type": "text",

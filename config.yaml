@@ -201,3 +201,6 @@ notion:
   # (banco do tracker — 1 linha por oferta por dia; alimentado por `minerador recalc`)
   history_database_id: "761e80c952e141f8839a45374cb0ff35"
   history_data_source_id: "5a620575-765a-49c6-9763-4e5b5a54ad61"
+  # grava 1 linha/oferta/dia no banco 📊 (alimenta o gráfico de linha).
+  # exige a integração "Claude" conectada ao banco 📊 (••• → Conexões).
+  write_history_snapshots: true

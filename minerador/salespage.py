@@ -6,7 +6,8 @@ Regra (combinada com o Julio):
   - sem preço   → passa só se tiver (checkout de infoproduto OU entrega digital
                   explícita) E algum sinal de low ticket
   - REJEITA sempre: plataforma de e-commerce no HTML, frete/estoque/variação,
-                    página de curso (área de aluno / módulos em vídeo)
+                    página de curso (área de aluno / módulos em vídeo),
+                    SaaS/assinatura (recorrência ≠ low ticket one-time)
 """
 from __future__ import annotations
 
@@ -51,6 +52,21 @@ _PHYSICAL_PAGE = (
     "unidades em estoque", "últimas unidades", "cor:", "tamanho:", "voltagem",
     "receba em casa", "código de rastreio", "codigo de rastreio", "envío gratis",
     "pago contra entrega", "trocas e devoluções", "nota fiscal",
+)
+# SaaS/assinatura: 2 falsos positivos reais (Creative OS, Help Global Brasil) —
+# ambos preço mensal (fx pegava só o número e passava como pagamento único).
+_SAAS_MARKERS = (
+    "teste grátis", "teste gratis", "dias grátis", "dias gratis",
+    "comece grátis", "comece gratis", "agendar consulta", "telemedicina",
+    "atendimento 24h", "atendimento 24 horas", "fazer login", "entrar na conta",
+    "acessar minha conta", "baixar o app", "disponível na app store",
+    "disponivel na app store", "disponível no google play",
+    "disponivel no google play", "cancele quando quiser",
+)
+_RECURRING_PRICE_HINT = (
+    "/mês", "/mes", "por mês", "por mes", "mensalidade", "plano mensal",
+    "plano anual", "assinatura", "/ano", "/año", "/year", "/mo", "per month",
+    "per year", "monthly", "annually", " mo.",
 )
 
 _PRICE_RE = re.compile(
@@ -107,9 +123,12 @@ def parse_prices(text: str, country: str) -> list[tuple[float, str]]:
         val = _to_float(m.group(2))
         if val is None or not (1 <= val <= 100000):
             continue
-        ctx = low[max(0, m.start() - 18):m.start()]
-        if any(h in ctx for h in _INSTALLMENT_HINT):
+        before_ctx = low[max(0, m.start() - 18):m.start()]
+        after_ctx = low[m.end():m.end() + 18]
+        if any(h in before_ctx for h in _INSTALLMENT_HINT):
             continue                      # "12x de R$ 97" não é o preço da oferta
+        if any(h in before_ctx or h in after_ctx for h in _RECURRING_PRICE_HINT):
+            continue                      # "R$ 47/mês" é assinatura, não pagamento único
         cur = _SYM_CUR.get(sym) or ""
         if sym == "$" or not cur:
             cur = _BARE_DOLLAR_BY_COUNTRY.get(country, "USD")
@@ -135,6 +154,12 @@ def evaluate(offer, page_data: dict, cfg, conn=None) -> Verdict:
     if ec_hits:
         return Verdict(False, "loja / e-commerce (plataforma detectada na página)",
                        detail="marcadores: " + ", ".join(ec_hits[:6]))
+    saas_hits = [mk for mk in _SAAS_MARKERS if mk in ltext]
+    saas_domain = _host(final_url).startswith("app.")
+    if len(saas_hits) >= 2 or (saas_domain and saas_hits):
+        return Verdict(False, "SaaS / assinatura (app de serviço, não infoproduto)",
+                       detail="marcadores: " + ", ".join(saas_hits[:6])
+                              + (f" · domínio app.: {_host(final_url)}" if saas_domain else ""))
     course_hits = [h for h in _COURSE_PAGE if h in ltext]
     if len(course_hits) >= 2:
         return Verdict(False, "página de curso (área de aluno / módulos)",

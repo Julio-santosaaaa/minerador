@@ -33,8 +33,10 @@ sync_target: 20
 # Palavras-chave por "janela". A rodada roda janela após janela (girando a lista)
 # até bater o daily_target, acabar as palavras-chave, ou estourar o tempo limite.
 keyword_window: 8
-run_deadline_min: 110          # tempo máximo de uma rodada (min) — teto de segurança
+run_deadline_min: 150          # tempo máximo de uma rodada (min) — teto de segurança
                                # (minera até 20 validadas; só para antes se estourar isto)
+                               # subido de 110->150 (2026-09-04): rodada de hoje usou 97min
+                               # dos 110 e só fechou 9/20 (filtro forte derruba muito candidato)
 
 # Uma oferta precisa de ENTRE min_ads e max_ads anúncios ATIVOS.
 min_ads: 9

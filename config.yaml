@@ -78,6 +78,8 @@ ignore_domains:
   - sobrancelhasacademy.com
   - gatewaytravel.com
   - decokit.shop
+  - facelessprokit.com
+  - projeto-lte.vercel.app
 
 # Palavras-chave — enxutas e com foco em SINAL DE OFERTA low ticket.
 # Ordem importa: preço/oferta primeiro (a rodada para ao bater o daily_target).

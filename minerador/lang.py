@@ -26,6 +26,10 @@ _PT = {
     "moldes para", "planilha excel", "dashboard notion", "atividades para imprimir",
     "atividades pedagógicas", "mapas mentais", "caderno digital", "guia prático",
     "cardápio semanal",
+    "planilha financeira", "material dourado", "apostila enem", "apostila concurso",
+    "presets lightroom", "pack de sublimação", "artes para sublimação",
+    "convites digitais", "papelaria digital", "receitas low carb", "plano de aula",
+    "caligrafia", "combo de artes", "mockup canva", "atividades educativas",
 }
 _ES = {
     "acceso inmediato", "pago único", "acceso de por vida", "por solo $", "por solo $9",

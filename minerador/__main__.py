@@ -157,7 +157,7 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
         cands = [o for o in cands if o.key not in already
                  and o.key not in picked_keys and o.ad_count >= 2]
         cands.sort(key=lambda o: (_verify_priority(o), -o.days_active_max))
-        cap = min(max(target * 2, 16), 32)
+        cap = min(max(target * 2, 16), 56)
         print(f"   {len(cands)} candidatos (verifica contagem de até {cap})")
 
         window_cands = cands[:cap]

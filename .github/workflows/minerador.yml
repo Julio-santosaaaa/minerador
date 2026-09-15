@@ -18,7 +18,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 270  # config.yaml: run_deadline_min 240 + margem pra recalc/prune/commit
     env:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       # ritmo mais devagar na nuvem (IP de datacenter = bloqueio mais fácil)

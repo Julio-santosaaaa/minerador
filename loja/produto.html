@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produto — STRIDE</title>
+<meta name="description" content="Detalhes do produto STRIDE: tamanhos, cores, composição e entrega.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111111'/%3E%3Ctext x='50' y='68' font-family='Arial,sans-serif' font-weight='900' font-size='60' fill='%23d7ff2b' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="produto">
+
+<div id="header-root"></div>
+
+<div class="container breadcrumb">
+  <a href="index.html">Início</a> / <a href="loja.html">Loja</a> / <a href="loja.html" id="crumbCat">Categoria</a> / <span id="crumbName">Produto</span>
+</div>
+
+<div class="container product-detail">
+  <div class="pd-gallery">
+    <div class="pd-gallery__main"><img id="pdMainImg" src="" alt=""></div>
+    <div class="pd-gallery__thumbs" id="pdThumbs"></div>
+  </div>
+
+  <div class="pd-info">
+    <div class="pd-cat" id="pdCat"></div>
+    <h1 class="pd-name" id="pdName"></h1>
+    <div class="pd-rating">
+      <span class="stars" id="pdStars"></span>
+      <span id="pdRatingText"></span>
+    </div>
+    <div class="pd-price" id="pdPrice"></div>
+    <p id="pdDesc" style="color:var(--ink-soft);line-height:1.6;margin:0 0 24px;"></p>
+
+    <div class="pd-block">
+      <div class="pd-label"><span>Tamanho</span><a href="#guiaTamanhos" style="text-decoration:underline;font-weight:600;">Guia de tamanhos</a></div>
+      <div class="size-grid" id="pdSizes"></div>
+    </div>
+
+    <div class="pd-block">
+      <div class="pd-label"><span>Cor</span></div>
+      <div class="color-grid" id="pdColors"></div>
+    </div>
+
+    <div class="pd-block">
+      <div class="pd-label"><span>Quantidade</span></div>
+      <div class="qty-stepper">
+        <button type="button" id="pdQtyMinus" aria-label="Diminuir">−</button>
+        <span id="pdQty">1</span>
+        <button type="button" id="pdQtyPlus" aria-label="Aumentar">+</button>
+      </div>
+    </div>
+
+    <div class="pd-actions">
+      <button class="btn btn--primary" id="pdAddBtn" type="button">Adicionar à Sacola</button>
+      <button class="wishlist-btn" id="pdWishlist" type="button" aria-label="Favoritar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+      </button>
+    </div>
+
+    <details class="accordion" open>
+      <summary>Detalhes do Produto</summary>
+      <ul>
+        <li>Composição principal: algodão e poliéster técnico</li>
+        <li>Modelagem testada em movimento</li>
+        <li>Produção com controle de qualidade em cada lote</li>
+      </ul>
+    </details>
+    <details class="accordion" id="guiaTamanhos">
+      <summary>Guia de Tamanhos</summary>
+      <p>Meça uma peça que já veste bem e compare com nossa tabela de medidas antes de escolher o tamanho. Em caso de dúvida entre dois tamanhos, prefira o maior.</p>
+    </details>
+    <details class="accordion">
+      <summary>Entrega e Devolução</summary>
+      <p>Troca grátis em até 30 dias após o recebimento. Prazo de entrega estimado exibido no fechamento do pedido.</p>
+    </details>
+  </div>
+</div>
+
+<section class="section related">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Combine Com</div>
+        <h2 class="section-title">Você Também Pode Gostar</h2>
+        <div class="bar"></div>
+      </div>
+    </div>
+    <div class="product-grid" id="relatedGrid"></div>
+  </div>
+</section>
+
+<div id="footer-root"></div>
+<div id="cart-root"></div>
+
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+<script>
+  injectLayout('loja');
+
+  const params = new URLSearchParams(window.location.search);
+  const product = getProductById(Number(params.get('id'))) || PRODUCTS[0];
+  const cat = getCategoryBySlug(product.cat);
+
+  document.title = product.name + ' — STRIDE';
+
+  const crumbCat = document.getElementById('crumbCat');
+  crumbCat.textContent = cat ? cat.name : '';
+  crumbCat.href = 'loja.html?cat=' + product.cat;
+  document.getElementById('crumbName').textContent = product.name;
+
+  const mainImg = document.getElementById('pdMainImg');
+  mainImg.src = productImage(product.seed, 800, 1000);
+  mainImg.alt = product.name;
+
+  const thumbsEl = document.getElementById('pdThumbs');
+  const thumbSeeds = [product.seed, product.seed + '-b', product.seed + '-c', product.seed + '-d'];
+  thumbsEl.innerHTML = thumbSeeds.map(function (s, i) {
+    return '<img src="' + productImage(s, 200, 200) + '" class="' + (i === 0 ? 'active' : '') + '" data-full="' + productImage(s, 800, 1000) + '" alt="' + product.name + ' — vista ' + (i + 1) + '">';
+  }).join('');
+  thumbsEl.querySelectorAll('img').forEach(function (img) {
+    img.addEventListener('click', function () {
+      mainImg.src = img.dataset.full;
+      thumbsEl.querySelectorAll('img').forEach(function (i) { i.classList.remove('active'); });
+      img.classList.add('active');
+    });
+  });
+
+  document.getElementById('pdCat').textContent = cat ? cat.name : '';
+  document.getElementById('pdName').textContent = product.name;
+  const fullStars = Math.round(product.rating);
+  document.getElementById('pdStars').textContent = '★★★★★☆☆☆☆☆'.slice(5 - fullStars, 10 - fullStars);
+  document.getElementById('pdRatingText').textContent = product.rating.toFixed(1) + ' (' + product.reviews + ' avaliações)';
+  document.getElementById('pdPrice').textContent = formatPrice(product.price);
+  document.getElementById('pdDesc').textContent = product.desc;
+
+  const sizeGrid = document.getElementById('pdSizes');
+  let selectedSize = product.sizes[0];
+  sizeGrid.innerHTML = product.sizes.map(function (s, i) {
+    return '<button type="button" class="size-opt ' + (i === 0 ? 'active' : '') + '" data-size="' + s + '">' + s + '</button>';
+  }).join('');
+  sizeGrid.querySelectorAll('.size-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      selectedSize = btn.dataset.size;
+      sizeGrid.querySelectorAll('.size-opt').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  const colorGrid = document.getElementById('pdColors');
+  let selectedColor = product.colors[0].name;
+  colorGrid.innerHTML = product.colors.map(function (c, i) {
+    return '<button type="button" class="color-opt ' + (i === 0 ? 'active' : '') + '" data-color="' + c.name + '" title="' + c.name + '"><span style="background:' + c.hex + ';border:1px solid #ddd;"></span></button>';
+  }).join('');
+  colorGrid.querySelectorAll('.color-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      selectedColor = btn.dataset.color;
+      colorGrid.querySelectorAll('.color-opt').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  let qty = 1;
+  const qtyEl = document.getElementById('pdQty');
+  document.getElementById('pdQtyMinus').addEventListener('click', function () {
+    qty = Math.max(1, qty - 1);
+    qtyEl.textContent = qty;
+  });
+  document.getElementById('pdQtyPlus').addEventListener('click', function () {
+    qty += 1;
+    qtyEl.textContent = qty;
+  });
+
+  document.getElementById('pdAddBtn').addEventListener('click', function () {
+    addToCart(product.id, selectedSize, selectedColor, qty);
+    openCart();
+  });
+
+  document.getElementById('pdWishlist').addEventListener('click', function (e) {
+    e.currentTarget.classList.toggle('active');
+  });
+
+  let related = PRODUCTS.filter(function (p) { return p.cat === product.cat && p.id !== product.id; }).slice(0, 4);
+  if (related.length === 0) related = PRODUCTS.filter(function (p) { return p.id !== product.id; }).slice(0, 4);
+  renderProductGrid(document.getElementById('relatedGrid'), related);
+</script>
+</body>
+</html>

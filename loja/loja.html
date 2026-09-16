@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loja — STRIDE</title>
+<meta name="description" content="Camisetas, moletons, calças, tênis e acessórios STRIDE. Filtre por categoria e encontre sua próxima peça.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111111'/%3E%3Ctext x='50' y='68' font-family='Arial,sans-serif' font-weight='900' font-size='60' fill='%23d7ff2b' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="loja">
+
+<div id="header-root"></div>
+
+<div class="container breadcrumb">
+  <a href="index.html">Início</a> / <span>Loja</span>
+</div>
+
+<header class="shop-head">
+  <div class="container">
+    <div class="eyebrow">Coleção Completa</div>
+    <h1 class="section-title">Loja</h1>
+  </div>
+</header>
+
+<div class="container">
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="shop-count" id="shopCount"></div>
+</div>
+
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="product-grid" id="shopGrid"></div>
+  </div>
+</section>
+
+<div id="footer-root"></div>
+<div id="cart-root"></div>
+
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+<script>
+  injectLayout('loja');
+
+  const filterBar = document.getElementById('filterBar');
+  const shopGrid = document.getElementById('shopGrid');
+  const shopCount = document.getElementById('shopCount');
+
+  filterBar.innerHTML = ['<button class="filter-chip" type="button" data-cat="todos">Todos</button>']
+    .concat(CATEGORIES.map(function (c) {
+      return '<button class="filter-chip" type="button" data-cat="' + c.slug + '">' + c.name + '</button>';
+    }))
+    .join('');
+
+  const params = new URLSearchParams(window.location.search);
+  let activeCat = params.get('cat') || 'todos';
+  if (!CATEGORIES.some(function (c) { return c.slug === activeCat; })) activeCat = 'todos';
+
+  function applyFilter() {
+    const list = activeCat === 'todos' ? PRODUCTS : PRODUCTS.filter(function (p) { return p.cat === activeCat; });
+    renderProductGrid(shopGrid, list);
+    shopCount.textContent = list.length + (list.length === 1 ? ' produto encontrado' : ' produtos encontrados');
+    filterBar.querySelectorAll('.filter-chip').forEach(function (chip) {
+      chip.classList.toggle('active', chip.dataset.cat === activeCat);
+    });
+  }
+
+  filterBar.addEventListener('click', function (e) {
+    const chip = e.target.closest('.filter-chip');
+    if (!chip) return;
+    activeCat = chip.dataset.cat;
+    const url = new URL(window.location.href);
+    if (activeCat === 'todos') url.searchParams.delete('cat');
+    else url.searchParams.set('cat', activeCat);
+    window.history.replaceState({}, '', url);
+    applyFilter();
+  });
+
+  applyFilter();
+</script>
+</body>
+</html>

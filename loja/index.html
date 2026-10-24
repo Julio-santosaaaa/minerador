@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRIDE — Vista o Movimento</title>
+<meta name="description" content="STRIDE — roupas e tênis de performance com atitude de rua. Camisetas, moletons, calças, tênis e acessórios.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111111'/%3E%3Ctext x='50' y='68' font-family='Arial,sans-serif' font-weight='900' font-size='60' fill='%23d7ff2b' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="home">
+
+<div id="header-root"></div>
+
+<section class="hero" style="background-image:url('https://picsum.photos/seed/stride-hero-home/1800/1200');">
+  <div class="container hero__content">
+    <div class="eyebrow">Coleção 2026</div>
+    <h1 class="hero__title">Vista o<br>Movimento</h1>
+    <p class="hero__text">Peças feitas pra quem treina, corre e não para. Performance e atitude de rua em cada detalhe.</p>
+    <div class="hero__actions">
+      <a href="loja.html" class="btn btn--primary">Ver Coleção</a>
+      <a href="sobre.html" class="btn btn--outline" style="border-color:#fff;color:#fff;">Nossa História</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Explore</div>
+        <h2 class="section-title">Categorias</h2>
+      </div>
+    </div>
+    <div class="cat-grid" id="categoryGrid"></div>
+  </div>
+</section>
+
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Selecionados pra você</div>
+        <h2 class="section-title">Destaques</h2>
+        <div class="bar"></div>
+      </div>
+      <a href="loja.html" class="btn btn--outline">Ver Tudo</a>
+    </div>
+    <div class="product-grid" id="featuredGrid"></div>
+  </div>
+</section>
+
+<section class="promo">
+  <div class="container">
+    <div class="eyebrow">Toda Sexta-Feira</div>
+    <h2>Novos Lançamentos<br>Toda Semana</h2>
+    <p>Edições limitadas somem rápido. Entra na lista e garante a sua antes de esgotar.</p>
+    <a href="loja.html" class="btn btn--light">Ver Novidades</a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container story">
+    <img src="https://picsum.photos/seed/stride-story-home/1000/650" alt="Atleta STRIDE em movimento" loading="lazy">
+    <div>
+      <div class="eyebrow">Nossa Essência</div>
+      <h2 class="section-title" style="margin-bottom:16px;">Mais que Roupa,<br>é Atitude</h2>
+      <p>Nascemos das quadras, das pistas e das ruas — pra quem entende que estilo e performance não são coisas separadas. Cada peça STRIDE é testada em movimento antes de chegar até você.</p>
+      <a href="sobre.html" class="btn btn--primary">Conheça Nossa História</a>
+    </div>
+  </div>
+</section>
+
+<section class="newsletter">
+  <div class="container newsletter__inner">
+    <div>
+      <h3>Fique Por Dentro dos Lançamentos</h3>
+      <p>Ofertas, drops e novidades direto no seu e-mail.</p>
+    </div>
+    <form onsubmit="event.preventDefault(); showToast('Inscrição de demonstração — conecte um serviço de e-mail aqui.');">
+      <input type="email" placeholder="Seu e-mail" required aria-label="E-mail">
+      <button type="submit">Inscrever</button>
+    </form>
+  </div>
+</section>
+
+<div id="footer-root"></div>
+<div id="cart-root"></div>
+
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+<script>
+  injectLayout('home');
+  renderCategoryGrid(document.getElementById('categoryGrid'));
+  renderProductGrid(document.getElementById('featuredGrid'), PRODUCTS.filter(function (p) { return p.featured; }).slice(0, 8));
+</script>
+</body>
+</html>

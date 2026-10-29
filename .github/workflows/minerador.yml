@@ -1,12 +1,13 @@
 name: minerador
 
-# Roda todo dia às 09:00 UTC = 06:00 America/Sao_Paulo.
+# Roda 2x por dia: 09:00 UTC (06h BRT) e 16:00 UTC (13h BRT), depois da 1ª terminar.
 # 4 jobs em PARALELO (cada um minera a sua fatia das palavras-chave, até ~5h15) e um
 # job final que junta o estado, dá a nota (Gemini) e comita.
 # Também dá pra disparar na mão em Actions -> minerador -> Run workflow.
 on:
   schedule:
     - cron: "0 9 * * *"
+    - cron: "0 16 * * *"
   workflow_dispatch:
 
 permissions:

@@ -51,8 +51,18 @@ _ES_ALL = ["MX", "CO", "PE", "CL", "AR", "ES"]
 _EN_ALL = ["US"]
 
 
+_DYNAMIC: dict = {}      # frase -> países (frases tiradas da copy das ofertas boas)
+
+
+def register(keyword: str, countries) -> None:
+    _DYNAMIC[keyword.strip().lower()] = list(countries)
+
+
 def countries_for(keyword: str, all_countries) -> list:
     k = keyword.strip().lower()
+    if k in _DYNAMIC:
+        picked = [c for c in _DYNAMIC[k] if c in all_countries]
+        return picked or list(all_countries)
     if k in _PT_BR_ONLY:
         bucket = _PT_BR
     elif k in _PT:

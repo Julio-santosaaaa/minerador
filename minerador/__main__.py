@@ -145,7 +145,7 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
     window = cfg.keyword_window
     max_windows = max(1, (n_kw + window - 1) // window)
     w = 0
-    while len(picked) < target and w < max_windows and time.time() < deadline:
+    while w < max_windows and time.time() < deadline:
         win = [kws[(cursor + i) % n_kw] for i in range(min(window, n_kw))]
         cursor = (cursor + len(win)) % n_kw
         w += 1
@@ -175,7 +175,7 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
         vres = m.verify_many(verify_items, deadline) if verify_items else {}
 
         for o in window_cands:
-            if len(picked) >= target or time.time() > deadline:
+            if time.time() > deadline:
                 break
             if o.key in vres:
                 vnodes, exact = vres[o.key]
@@ -258,22 +258,54 @@ def cmd_run(args) -> None:
     already = store.synced_keys(conn, exclude_stale_days=cfg.recycle_days)
     known_pages, known_domains = store.known_pages_and_domains(conn)
     run_id = store.start_run(conn, principal)
-    cursor = int(store.kv_get(conn, "kw_cursor", "0") or 0)
+    kw_key = f"kw_cursor_{cfg.job}" if cfg.jobs > 1 else "kw_cursor"
 
     picked, picked_keys, all_ads = [], set(), []
+    passes_done = 0
     try:
         with Miner(cfg, RAW_DIR) as m:
-            cursor = _process_pool(m, cfg, conn, principal, cursor, target, deadline,
-                                   already, picked, picked_keys, all_ads, "principal",
-                                   known_pages, known_domains)
-            store.kv_set(conn, "kw_cursor", cursor)
-            if len(picked) < target and reserve and time.time() < deadline:
-                print(f"\n>> principal deu {len(picked)}/{target} validadas — "
-                      f"abrindo o pool RESERVA ({len(reserve)} keywords)")
-                progress.set(phase="pool reserva")
-                _process_pool(m, cfg, conn, reserve, 0, target, deadline,
-                              already, picked, picked_keys, all_ads, "reserva",
-                              known_pages, known_domains)
+            # várias passadas: a 1ª igual à de hoje; as seguintes com mais scrolls.
+            # A rodada só para por TEMPO (target é só meta de log).
+            for scrolls in (cfg.scroll_passes or [cfg.fetch.max_scrolls]):
+                if time.time() >= deadline:
+                    break
+                cfg.fetch.max_scrolls = scrolls
+                print(f"\n#### PASSADA {passes_done + 1} · {scrolls} scrolls · "
+                      f"{len(picked)}/{target} validadas até agora ####")
+                progress.set(phase=f"passada {passes_done + 1} ({scrolls} scrolls)")
+                cursor = int(store.kv_get(conn, kw_key, "0") or 0) if passes_done == 0 else 0
+                cursor = _process_pool(m, cfg, conn, principal, cursor, target, deadline,
+                                       already, picked, picked_keys, all_ads, "principal",
+                                       known_pages, known_domains)
+                if passes_done == 0:
+                    store.kv_set(conn, kw_key, cursor)
+                if reserve and time.time() < deadline:
+                    progress.set(phase="pool reserva")
+                    _process_pool(m, cfg, conn, reserve, 0, target, deadline,
+                                  already, picked, picked_keys, all_ads, "reserva",
+                                  known_pages, known_domains)
+                passes_done += 1
+
+            # sobrou tempo: busca por FRASES da copy das ofertas validadas (acha ofertas
+            # parecidas/concorrentes). Repete enquanto surgirem frases novas.
+            from .phrases import phrases_from_copies
+            used_phrases = set()
+            cfg.fetch.max_scrolls = (cfg.scroll_passes or [cfg.fetch.max_scrolls])[0]
+            while time.time() < deadline:
+                from .lang import register
+                new = []
+                for o, _, _ in picked:
+                    for ph in phrases_from_copies([o.sample_copy], seen=used_phrases | set(new), limit=1):
+                        register(ph, o.countries or cfg.countries)
+                        new.append(ph)
+                new = new[:24]
+                if not new:
+                    break
+                used_phrases.update(new)
+                print(f"\n#### FRASES das ofertas boas ({len(new)}) ####")
+                progress.set(phase="frases das ofertas boas")
+                _process_pool(m, cfg, conn, new, 0, target, deadline, already, picked,
+                              picked_keys, all_ads, "frases", known_pages, known_domains)
     except PlaywrightMissing as e:
         sys.exit(str(e))
 
@@ -286,9 +318,10 @@ def cmd_run(args) -> None:
     print()
     _print_picked(picked)
 
+    print(f"\nRodada {cfg.job + 1}/{cfg.jobs}: {len(picked)} novas validadas "
+          f"(meta {target}) em {passes_done} passada(s).")
     if len(picked) < target:
-        print(f"\n⚠️ BIBLIOTECA SECA: {len(picked)}/{target} validadas nesta rodada "
-              f"(varri principal + reserva). Sobe o que tem; rode de novo mais tarde.")
+        print(f"⚠️ abaixo da meta: {len(picked)}/{target}. Sobe o que tem.")
     progress.finish({"validadas": len(picked), "target": target})
 
     # o que vai pro Notion: TOP `sync_target` do SQLite = novas desta rodada

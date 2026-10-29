@@ -15,7 +15,7 @@ Notion pra revisão manual.
 - **Nuvem**: GitHub Actions roda 2x por dia (06h e 13h BRT) (`.github/workflows/minerador.yml`):
   **4 jobs em paralelo** (`MINERADOR_JOB`/`MINERADOR_JOBS`, cada um com sua fatia das palavras-chave,
   até 315 min) + 1 job `merge` (`python -m minerador merge`) que junta o estado, dá a **nota 1-10**
-  (6 critérios + média, Gemini grátis, `GEMINI_API_KEY`) e comita. A rodada só para por TEMPO
+  (6 critérios + média, Groq grátis, `GROQ_API_KEY`) e comita. A rodada só para por TEMPO
   (meta 20 novas, continua depois); passadas de scroll 24→40→60 + busca por frases das ofertas boas.
   Sem repetidas: oferta enviada/apagada-do-Notion/rejeitada (14d) não volta (tabelas `synced`, `blocked`, `rejected`).
   Testes: `python3 -m pytest tests -q`.

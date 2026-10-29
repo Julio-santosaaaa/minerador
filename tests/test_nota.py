@@ -36,7 +36,7 @@ def test_media_rounds_one_decimal():
 
 
 def _resp(payload):
-    return {"candidates": [{"content": {"parts": [{"text": json.dumps(payload)}]}}]}
+    return {"choices": [{"message": {"content": json.dumps(payload)}}]}
 
 
 def test_avaliar_ok_and_no_key_or_text():

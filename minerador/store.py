@@ -432,7 +432,7 @@ def last_valid_count(conn, offer_key):
     return row["ad_count"] if row else None
 
 
-# ---- nota (Gemini): texto guardado na validação, nota dada depois no merge ----
+# ---- nota (Groq): texto guardado na validação, nota dada depois no merge ----
 
 MAX_SCORE_TRIES = 3
 

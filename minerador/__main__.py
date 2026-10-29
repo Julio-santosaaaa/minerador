@@ -352,7 +352,7 @@ def cmd_run(args) -> None:
 
 
 def cmd_merge(args) -> None:
-    """Junta os bancos dos jobs paralelos e dá a nota (Gemini) nas ofertas novas."""
+    """Junta os bancos dos jobs paralelos e dá a nota (Groq) nas ofertas novas."""
     from .merge import merge_dbs, score_pending
     cfg = Config.load()
     jobs_dir = Path(args.jobs_dir)
@@ -376,7 +376,7 @@ def cmd_merge(args) -> None:
 
 
 def cmd_selftest(args) -> None:
-    """Teste rápido, sem minerar: Notion (cria as colunas de nota) + Gemini (1 chamada)."""
+    """Teste rápido, sem minerar: Notion (cria as colunas de nota) + Groq (1 chamada)."""
     from . import nota
     cfg = Config.load()
     ok = True
@@ -388,30 +388,26 @@ def cmd_selftest(args) -> None:
     except Exception as e:
         ok = False
         print(f"ERRO Notion: {e}")
-    if not cfg.gemini_api_key:
+    if not cfg.groq_api_key:
         ok = False
-        print("ERRO Gemini: GEMINI_API_KEY vazia (secret não chegou)")
+        print("ERRO Groq: GROQ_API_KEY vazia (secret não chegou)")
     else:
         texto = ("Ebook com 30 receitas fit para quem trabalha o dia todo e quer emagrecer "
                  "sem passar fome. Antes: cansada e sem tempo. Depois: 5kg a menos em 30 dias. "
                  "Por apenas R$ 27, acesso imediato.")
-        url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
-               f"{cfg.gemini_model}:generateContent")
-        body = {"contents": [{"parts": [{"text": nota._PROMPT + texto}]}],
-                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
+        body = nota.montar_body(texto, cfg.groq_model)
         try:
-            resp = nota._http_post(url, body, cfg.gemini_api_key)
-            raw = "".join(p.get("text", "") for p in resp["candidates"][0]["content"]["parts"])
+            raw = nota.extrair(nota._http_post(nota.URL, body, cfg.groq_api_key))
             notas = nota.parse_notas(raw)
             if notas:
-                print(f"OK  Gemini ({cfg.gemini_model}): {notas} · média {nota.media(notas)}")
+                print(f"OK  Groq ({cfg.groq_model}): {notas} · média {nota.media(notas)}")
             else:
                 ok = False
-                print(f"ERRO Gemini: respondeu fora do formato: {raw[:300]}")
+                print(f"ERRO Groq: respondeu fora do formato: {raw[:300]}")
         except Exception as e:
             ok = False
             detalhe = e.read().decode()[:300] if hasattr(e, "read") else ""
-            print(f"ERRO Gemini ({cfg.gemini_model}): {e!r} {detalhe}")
+            print(f"ERRO Groq ({cfg.groq_model}): {e!r} {detalhe}")
     print("TUDO CERTO" if ok else "TEM PROBLEMA (veja os ERRO acima)")
     if not ok:
         raise SystemExit(1)
@@ -509,11 +505,11 @@ def main(argv=None) -> None:
                    help="escreve data/progress.json a cada evento (acompanhamento ao vivo)")
     r.set_defaults(func=cmd_run)
 
-    mg = sub.add_parser("merge", help="junta os bancos dos jobs paralelos + dá a nota (Gemini)")
+    mg = sub.add_parser("merge", help="junta os bancos dos jobs paralelos + dá a nota (Groq)")
     mg.add_argument("--jobs-dir", required=True, help="pasta com os artifacts db-*/minerador.db")
     mg.set_defaults(func=cmd_merge)
 
-    st = sub.add_parser("selftest", help="testa Notion + Gemini sem minerar")
+    st = sub.add_parser("selftest", help="testa Notion + Groq sem minerar")
     st.set_defaults(func=cmd_selftest)
 
     l = sub.add_parser("list", help="lista as ofertas do SQLite")

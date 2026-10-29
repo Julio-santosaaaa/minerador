@@ -62,8 +62,8 @@ class Config:
     job: int = 0
     jobs: int = 1
     scroll_passes: list = field(default_factory=lambda: [24])
-    gemini_model: str = "gemini-2.5-flash-lite"
-    gemini_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    groq_api_key: str = ""
 
     @classmethod
     def load(cls, path: Path | None = None) -> "Config":
@@ -165,6 +165,6 @@ class Config:
             job=job,
             jobs=jobs,
             scroll_passes=[int(x) for x in (raw.get("scroll_passes") or [fetch.max_scrolls])],
-            gemini_model=str(raw.get("gemini_model", "gemini-2.5-flash-lite")),
-            gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
+            groq_model=str(raw.get("groq_model", "llama-3.3-70b-versatile")),
+            groq_api_key=os.getenv("GROQ_API_KEY", ""),
         )

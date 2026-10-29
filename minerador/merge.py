@@ -1,4 +1,4 @@
-"""Junta os bancos dos jobs paralelos no banco principal e dá a nota (Gemini) nas ofertas novas."""
+"""Junta os bancos dos jobs paralelos no banco principal e dá a nota (Groq) nas ofertas novas."""
 from __future__ import annotations
 
 import sqlite3
@@ -45,17 +45,17 @@ def merge_dbs(main_path: Path, job_paths) -> int:
 
 
 def score_pending(conn, cfg, notion, sleep_s: float = 6.5) -> int:
-    """Nota (Gemini) nas ofertas novas e escreve as 7 colunas na página do Notion.
-    Sem GEMINI_API_KEY ou com erro: não escreve nada (colunas vazias)."""
+    """Nota (Groq) nas ofertas novas e escreve as 7 colunas na página do Notion.
+    Sem GROQ_API_KEY ou com erro: não escreve nada (colunas vazias)."""
     from .notion_sync import nota_props
-    if not cfg.gemini_api_key:
-        print("  (sem GEMINI_API_KEY — ofertas ficam sem nota)")
+    if not cfg.groq_api_key:
+        print("  (sem GROQ_API_KEY — ofertas ficam sem nota)")
         return 0
     done = 0
     rows = store.pending_scoring(conn)
     print(f"  nota: {len(rows)} oferta(s) pendente(s)")
     for r in rows:
-        notas = nota.avaliar(r["text"], cfg.gemini_api_key, cfg.gemini_model)
+        notas = nota.avaliar(r["text"], cfg.groq_api_key, cfg.groq_model)
         ok = notas is not None
         if ok:
             try:

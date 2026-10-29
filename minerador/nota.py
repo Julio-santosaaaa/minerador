@@ -1,4 +1,4 @@
-"""Nota 1-10 da força comercial da oferta, dada pelo Gemini (plano grátis).
+"""Nota 1-10 da força comercial da oferta, dada pelo Groq (plano grátis).
 Nunca inventa: erro, limite, texto vazio ou resposta fora do formato -> None (colunas vazias)."""
 from __future__ import annotations
 
@@ -60,9 +60,25 @@ def media(notas):
     return round(sum(notas[c] for c in CRITERIOS) / len(CRITERIOS) + 1e-9, 1)
 
 
+URL = "https://api.groq.com/openai/v1/chat/completions"
+
+
+def montar_body(texto: str, model: str) -> dict:
+    return {"model": model, "temperature": 0.2,
+            "response_format": {"type": "json_object"},
+            "messages": [{"role": "user", "content": _PROMPT + texto.strip()[:_MAX_CHARS]}]}
+
+
+def extrair(resp: dict) -> str:
+    return resp["choices"][0]["message"]["content"]
+
+
 def _http_post(url: str, body: dict, key: str) -> dict:
+    # User-Agent próprio: o padrão do urllib é bloqueado pelo Cloudflare do Groq
     req = urllib.request.Request(url, data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json", "x-goog-api-key": key})
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {key}",
+                                          "User-Agent": "minerador/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read())
@@ -73,17 +89,13 @@ def _http_post(url: str, body: dict, key: str) -> dict:
 
 
 def avaliar(texto: str, api_key: str, model: str, post=_http_post, wait: float = 20.0):
-    """Chama o Gemini. 1 retry em 429. Qualquer falha -> None."""
+    """Chama o Groq. 1 retry em 429. Qualquer falha -> None."""
     if not api_key or not (texto or "").strip():
         return None
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    body = {"contents": [{"parts": [{"text": _PROMPT + texto.strip()[:_MAX_CHARS]}]}],
-            "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
+    body = montar_body(texto, model)
     for attempt in (0, 1):
         try:
-            resp = post(url, body, api_key)
-            parts = resp["candidates"][0]["content"]["parts"]
-            return parse_notas("".join(p.get("text", "") for p in parts))
+            return parse_notas(extrair(post(URL, body, api_key)))
         except RateLimited:
             if attempt == 0:
                 time.sleep(wait)

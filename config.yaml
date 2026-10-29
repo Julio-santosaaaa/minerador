@@ -35,7 +35,7 @@ sync_target: 0               # 0 = manda TODAS as novas (não corta)
 # até bater o daily_target, acabar as palavras-chave, ou estourar o tempo limite.
 keyword_window: 6
 scroll_passes: [24, 40, 60]   # 1ª passada = modo de hoje (já provado); depois mais fundo
-gemini_model: gemini-2.5-flash-lite   # nota 1-10 (GEMINI_API_KEY no GitHub Secrets)
+groq_model: llama-3.3-70b-versatile   # nota 1-10 (GROQ_API_KEY no GitHub Secrets)
 run_deadline_min: 315          # tempo máximo de uma rodada (min) — teto de segurança
                                # (minera até 35 validadas; só para antes se estourar isto)
                                # 240->290 (2026-09-14): workflow subiu timeout-minutes pra

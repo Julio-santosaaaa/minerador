@@ -62,13 +62,3 @@ O `git pull` antes de rodar na mão evita conflito com o estado que a nuvem comm
   (código exposto) ou rodar dia sim dia não.
 - Pra chegar perto de 20/dia de verdade: proxy residencial (`fetch.proxy` no config)
   ou rodar 2x/dia.
-
-## Nota por IA (Groq grátis) — 2026-10-29
-
-1. Entre em https://console.groq.com com sua conta Google → **API Keys** → **Create API Key** (começa com `gsk_`).
-2. No repositório: **Settings → Secrets and variables → Actions → New repository secret**.
-3. Name: `GROQ_API_KEY` · Secret: a chave · **Add secret**.
-4. Sem a chave o minerador funciona igual, só que as ofertas sobem **sem nota**.
-5. Na primeira rodada o minerador cria as 7 colunas de nota no Notion. No Notion, arraste a coluna
-   **NOTA MÉDIA** para o início da tabela (a API não move colunas).
-

@@ -85,11 +85,6 @@ def sync(conn, offers_scored, cfg: Config) -> dict:
         raise RuntimeError("notion-client não instalado (pip install -r requirements.txt)") from e
 
     notion = Client(auth=cfg.notion_token)
-    try:
-        from .notion_setup import ensure_nota_columns
-        ensure_nota_columns(notion, cfg.notion_database_id)
-    except Exception as e:
-        print(f"  (colunas de nota não garantidas: {e})")
     created = updated = failed = 0
     synced_ok = []
 

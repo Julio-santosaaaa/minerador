@@ -216,8 +216,6 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
             h = heat_score(o.days_active_max, o.ad_count, o.collation_total,
                            o.started_recently, cfg.heat_weights, cfg.min_days_active)
             lv = heat_level(h)
-            store.save_offer_text(conn, o.key, (o.sample_copy or "") + "\n---\n"
-                                  + (data.get("text") or "")[:5000])
             picked.append((o, h, lv))
             picked_keys.add(o.key)
             if o.page_id:
@@ -352,65 +350,18 @@ def cmd_run(args) -> None:
 
 
 def cmd_merge(args) -> None:
-    """Junta os bancos dos jobs paralelos e dá a nota (Groq) nas ofertas novas."""
-    from .merge import merge_dbs, score_pending
+    """Junta os bancos dos jobs paralelos e marca como bloqueadas as ofertas apagadas no Notion."""
+    from .merge import merge_dbs
     cfg = Config.load()
     jobs_dir = Path(args.jobs_dir)
     paths = sorted(jobs_dir.rglob("minerador.db"))
     n = merge_dbs(DB_PATH, paths)
     print(f"merge: {len(paths)} banco(s) de job · {n} oferta(s) nova(s) no estado")
-    from .recalc import _notion_client
-    try:
-        notion = _notion_client(cfg)
-        from .notion_setup import ensure_nota_columns
-        ensure_nota_columns(notion, cfg.notion_database_id)
-    except Exception as e:
-        print(f"  (Notion indisponível, sem nota hoje: {e})")
-        return
     conn = store.connect(DB_PATH)
     try:
         _auto_reconcile(cfg, conn)      # apagadas no Notion -> lista de bloqueio
     except Exception as e:
         print(f"  (reconcile pulado: {e})")
-    print(f"notas gravadas: {score_pending(conn, cfg, notion)}")
-
-
-def cmd_selftest(args) -> None:
-    """Teste rápido, sem minerar: Notion (cria as colunas de nota) + Groq (1 chamada)."""
-    from . import nota
-    cfg = Config.load()
-    ok = True
-    try:
-        from .recalc import _notion_client
-        from .notion_setup import ensure_nota_columns
-        ensure_nota_columns(_notion_client(cfg), cfg.notion_database_id)
-        print("OK  Notion: conectou e as 7 colunas de nota existem")
-    except Exception as e:
-        ok = False
-        print(f"::error::ERRO Notion: {e}")
-    if not cfg.groq_api_key:
-        ok = False
-        print("::error::ERRO Groq: GROQ_API_KEY vazia (secret não chegou)")
-    else:
-        texto = ("Ebook com 30 receitas fit para quem trabalha o dia todo e quer emagrecer "
-                 "sem passar fome. Antes: cansada e sem tempo. Depois: 5kg a menos em 30 dias. "
-                 "Por apenas R$ 27, acesso imediato.")
-        body = nota.montar_body(texto, cfg.groq_model)
-        try:
-            raw = nota.extrair(nota._http_post(nota.URL, body, cfg.groq_api_key))
-            notas = nota.parse_notas(raw)
-            if notas:
-                print(f"OK  Groq ({cfg.groq_model}): {notas} · média {nota.media(notas)}")
-            else:
-                ok = False
-                print(f"::error::ERRO Groq: respondeu fora do formato: {raw[:300]}")
-        except Exception as e:
-            ok = False
-            detalhe = e.read().decode()[:300] if hasattr(e, "read") else ""
-            print(f"::error::ERRO Groq ({cfg.groq_model}): {e!r} {detalhe}")
-    print("TUDO CERTO" if ok else "TEM PROBLEMA (veja os ERRO acima)")
-    if not ok:
-        raise SystemExit(1)
 
 
 def cmd_list(args) -> None:
@@ -505,12 +456,9 @@ def main(argv=None) -> None:
                    help="escreve data/progress.json a cada evento (acompanhamento ao vivo)")
     r.set_defaults(func=cmd_run)
 
-    mg = sub.add_parser("merge", help="junta os bancos dos jobs paralelos + dá a nota (Groq)")
+    mg = sub.add_parser("merge", help="junta os bancos dos jobs paralelos")
     mg.add_argument("--jobs-dir", required=True, help="pasta com os artifacts db-*/minerador.db")
     mg.set_defaults(func=cmd_merge)
-
-    st = sub.add_parser("selftest", help="testa Notion + Groq sem minerar")
-    st.set_defaults(func=cmd_selftest)
 
     l = sub.add_parser("list", help="lista as ofertas do SQLite")
     l.add_argument("--min-heat", type=float, default=0.0)

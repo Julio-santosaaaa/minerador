@@ -2,7 +2,7 @@ name: minerador
 
 # Roda 2x por dia: 09:00 UTC (06h BRT) e 16:00 UTC (13h BRT), depois da 1ª terminar.
 # 4 jobs em PARALELO (cada um minera a sua fatia das palavras-chave, até ~5h15) e um
-# job final que junta o estado, dá a nota (Groq) e comita.
+# job final que junta o estado e comita.
 # Também dá pra disparar na mão em Actions -> minerador -> Run workflow.
 on:
   schedule:
@@ -74,7 +74,6 @@ jobs:
     timeout-minutes: 120
     env:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       MINERADOR_TABS: "1"
       MINERADOR_DELAY: "3.0,6.5"
       PYTHONUNBUFFERED: "1"
@@ -97,7 +96,7 @@ jobs:
           pattern: db-*
           path: jobs-db
 
-      - name: junta o estado + nota (Groq)
+      - name: junta o estado
         run: python -m minerador merge --jobs-dir jobs-db
         continue-on-error: true
 

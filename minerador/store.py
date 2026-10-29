@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS rejected (
     rejected_at TEXT,
     PRIMARY KEY (page_id, domain_root)
 );
+CREATE TABLE IF NOT EXISTS offer_text (
+    offer_key TEXT PRIMARY KEY,
+    text TEXT,
+    scored INTEGER DEFAULT 0,
+    tries INTEGER DEFAULT 0,
+    created_at TEXT
+);
 CREATE TABLE IF NOT EXISTS offer_history (
     offer_key TEXT NOT NULL,
     run_date TEXT NOT NULL,          -- YYYY-MM-DD (fuso America/Sao_Paulo, UTC-3)
@@ -423,3 +430,29 @@ def last_valid_count(conn, offer_key):
         (offer_key,),
     ).fetchone()
     return row["ad_count"] if row else None
+
+
+# ---- nota (Gemini): texto guardado na validação, nota dada depois no merge ----
+
+MAX_SCORE_TRIES = 3
+
+
+def save_offer_text(conn, offer_key: str, text: str) -> None:
+    conn.execute("INSERT OR REPLACE INTO offer_text (offer_key, text, scored, tries, created_at) "
+                 "VALUES (?,?,0,0,?)", (offer_key, (text or "")[:9000], now_iso()))
+    conn.commit()
+
+
+def pending_scoring(conn):
+    """Ofertas já no Notion (têm página) com texto e ainda sem nota (até 3 tentativas)."""
+    return conn.execute(
+        "SELECT t.offer_key, t.text, s.notion_page_id FROM offer_text t "
+        "JOIN synced s ON s.offer_key = t.offer_key "
+        "WHERE t.scored = 0 AND t.tries < ? AND s.notion_page_id != '' AND t.text != ''",
+        (MAX_SCORE_TRIES,)).fetchall()
+
+
+def mark_scored(conn, offer_key: str, ok: bool) -> None:
+    conn.execute("UPDATE offer_text SET scored = ?, tries = tries + 1 WHERE offer_key = ?",
+                 (1 if ok else 0, offer_key))
+    conn.commit()

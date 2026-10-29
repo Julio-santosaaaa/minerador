@@ -103,6 +103,33 @@ def ensure_trend_column(notion, database_id: str) -> None:
     print("  + coluna TENDÊNCIA criada no Notion")
 
 
+NOTA_COLUMNS = ("NOTA MÉDIA", "Dor forte", "Promessa desejável", "Público comprador",
+                "Transformação clara", "Valor percebido", "Facilidade de compra")
+
+
+def ensure_nota_columns(notion, database_id: str) -> None:
+    """Cria as 7 colunas de nota (number) que ainda não existem. Idempotente."""
+    db = notion.databases.retrieve(database_id=database_id)
+    ds = db.get("data_sources") or []
+    props = {}
+    if ds:
+        try:
+            props = notion.request(path=f"data_sources/{ds[0]['id']}", method="GET").get("properties", {})
+        except Exception:
+            props = {}
+    else:
+        props = db.get("properties", {})
+    schema = {c: {"number": {"format": "number"}} for c in NOTA_COLUMNS if c not in props}
+    if not schema:
+        return
+    if ds:
+        notion.request(path=f"data_sources/{ds[0]['id']}", method="PATCH",
+                       body={"properties": schema})
+    else:
+        notion.databases.update(database_id=database_id, properties=schema)
+    print(f"  + colunas de nota criadas no Notion: {', '.join(schema)}")
+
+
 def _archive_all(notion, database_id: str) -> int:
     db = notion.databases.retrieve(database_id=database_id)
     ds = (db.get("data_sources") or [])

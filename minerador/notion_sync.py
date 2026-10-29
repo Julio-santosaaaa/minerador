@@ -20,6 +20,19 @@ P_COUNTRIES = "PAÍS"
 P_MINED = "MINERADO EM"
 
 
+def nota_props(notas) -> dict:
+    """Props Notion das 7 colunas de nota. Sem nota (None) -> {} (colunas ficam vazias)."""
+    from . import nota
+    if not notas:
+        return {}
+    props = {c: {"number": float(notas[c])} for c in nota.CRITERIOS}
+    m = nota.media(notas)
+    if m is None:
+        return {}
+    props["NOTA MÉDIA"] = {"number": float(m)}
+    return props
+
+
 def _title(offer: Offer) -> str:
     base = f"{offer.page_name} — {offer.domain}" if offer.domain else offer.page_name
     return base.upper()[:1900]
@@ -46,6 +59,20 @@ def _create_props(offer: Offer) -> dict:
     return p
 
 
+def _find_by_title(notion, database_id: str, title: str):
+    """id da página com este título no banco (ou None). Evita duplicar entre jobs paralelos."""
+    from .recalc import _data_source_id
+    try:
+        ds_id = _data_source_id(notion, database_id)
+        path = f"data_sources/{ds_id}/query" if ds_id else f"databases/{database_id}/query"
+        resp = notion.request(path=path, method="POST", body={
+            "page_size": 1, "filter": {"property": P_TITLE, "title": {"equals": title}}})
+        res = resp.get("results") or []
+        return res[0]["id"] if res else None
+    except Exception:
+        return None
+
+
 def sync(conn, offers_scored, cfg: Config) -> dict:
     if not cfg.notion_token:
         raise RuntimeError("NOTION_TOKEN vazio no .env")
@@ -58,6 +85,11 @@ def sync(conn, offers_scored, cfg: Config) -> dict:
         raise RuntimeError("notion-client não instalado (pip install -r requirements.txt)") from e
 
     notion = Client(auth=cfg.notion_token)
+    try:
+        from .notion_setup import ensure_nota_columns
+        ensure_nota_columns(notion, cfg.notion_database_id)
+    except Exception as e:
+        print(f"  (colunas de nota não garantidas: {e})")
     created = updated = failed = 0
     synced_ok = []
 
@@ -68,6 +100,11 @@ def sync(conn, offers_scored, cfg: Config) -> dict:
                 notion.pages.update(page_id=page_id, properties=_props(offer))
                 updated += 1
                 synced_ok.append((offer.key, page_id))
+            elif (dup := _find_by_title(notion, cfg.notion_database_id, _title(offer))):
+                # outro job paralelo já criou esta oferta -> só atualiza
+                notion.pages.update(page_id=dup, properties=_props(offer))
+                updated += 1
+                synced_ok.append((offer.key, dup))
             else:
                 res = notion.pages.create(
                     parent={"database_id": cfg.notion_database_id},

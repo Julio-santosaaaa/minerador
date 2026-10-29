@@ -216,6 +216,8 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
             h = heat_score(o.days_active_max, o.ad_count, o.collation_total,
                            o.started_recently, cfg.heat_weights, cfg.min_days_active)
             lv = heat_level(h)
+            store.save_offer_text(conn, o.key, (o.sample_copy or "") + "\n---\n"
+                                  + (data.get("text") or "")[:5000])
             picked.append((o, h, lv))
             picked_keys.add(o.key)
             if o.page_id:
@@ -349,6 +351,30 @@ def cmd_run(args) -> None:
           f"({len(to_sync)} enviadas)")
 
 
+def cmd_merge(args) -> None:
+    """Junta os bancos dos jobs paralelos e dá a nota (Gemini) nas ofertas novas."""
+    from .merge import merge_dbs, score_pending
+    cfg = Config.load()
+    jobs_dir = Path(args.jobs_dir)
+    paths = sorted(jobs_dir.rglob("minerador.db"))
+    n = merge_dbs(DB_PATH, paths)
+    print(f"merge: {len(paths)} banco(s) de job · {n} oferta(s) nova(s) no estado")
+    from .recalc import _notion_client
+    try:
+        notion = _notion_client(cfg)
+        from .notion_setup import ensure_nota_columns
+        ensure_nota_columns(notion, cfg.notion_database_id)
+    except Exception as e:
+        print(f"  (Notion indisponível, sem nota hoje: {e})")
+        return
+    conn = store.connect(DB_PATH)
+    try:
+        _auto_reconcile(cfg, conn)      # apagadas no Notion -> lista de bloqueio
+    except Exception as e:
+        print(f"  (reconcile pulado: {e})")
+    print(f"notas gravadas: {score_pending(conn, cfg, notion)}")
+
+
 def cmd_list(args) -> None:
     conn = store.connect(DB_PATH)
     _print_db(conn, args.min_heat, args.top)
@@ -440,6 +466,10 @@ def main(argv=None) -> None:
     r.add_argument("--progress", action="store_true",
                    help="escreve data/progress.json a cada evento (acompanhamento ao vivo)")
     r.set_defaults(func=cmd_run)
+
+    mg = sub.add_parser("merge", help="junta os bancos dos jobs paralelos + dá a nota (Gemini)")
+    mg.add_argument("--jobs-dir", required=True, help="pasta com os artifacts db-*/minerador.db")
+    mg.set_defaults(func=cmd_merge)
 
     l = sub.add_parser("list", help="lista as ofertas do SQLite")
     l.add_argument("--min-heat", type=float, default=0.0)

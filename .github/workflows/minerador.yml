@@ -1,13 +1,14 @@
 name: minerador
 
 # Roda todo dia às 09:00 UTC = 06:00 America/Sao_Paulo.
+# 4 jobs em PARALELO (cada um minera a sua fatia das palavras-chave, até ~5h15) e um
+# job final que junta o estado, dá a nota (Gemini) e comita.
 # Também dá pra disparar na mão em Actions -> minerador -> Run workflow.
 on:
   schedule:
     - cron: "0 9 * * *"
   workflow_dispatch:
 
-# permite ao job commitar o data/minerador.db de volta no repo
 permissions:
   contents: write
 
@@ -16,12 +17,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run:
+  mine:
     runs-on: ubuntu-latest
-    timeout-minutes: 345  # perto do teto real do GitHub (360min/6h) + margem pra recalc/prune/commit
+    timeout-minutes: 345          # teto real do GitHub é 360
+    strategy:
+      fail-fast: false            # um job bloqueado não derruba os outros
+      matrix:
+        job: [0, 1, 2, 3]
     env:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-      # ritmo mais devagar na nuvem (IP de datacenter = bloqueio mais fácil)
+      MINERADOR_JOB: ${{ matrix.job }}
+      MINERADOR_JOBS: "4"
+      # ritmo igual ao que já roda todo dia sem bloqueio: 1 aba, pausas longas
       MINERADOR_TABS: "1"
       MINERADOR_DELAY: "3.0,6.5"
       PYTHONUNBUFFERED: "1"
@@ -38,12 +45,60 @@ jobs:
           pip install -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: minera (até 20 validadas -> Notion)
+      - name: minera (fatia ${{ matrix.job }} de 4) -> Notion
         run: python -m minerador run
         continue-on-error: true
 
-      - name: pausa
-        run: sleep 90
+      - name: guarda o estado deste job
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-${{ matrix.job }}
+          path: data/minerador.db
+          retention-days: 2
+
+      - name: guarda os logs de rejeição (auditoria)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rejeicoes-${{ github.run_number }}-${{ matrix.job }}
+          path: data/raw/reject_*.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+  merge:
+    needs: mine
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      MINERADOR_TABS: "1"
+      MINERADOR_DELAY: "3.0,6.5"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: instala dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: baixa o estado dos jobs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: db-*
+          path: jobs-db
+
+      - name: junta o estado + nota (Gemini)
+        run: python -m minerador merge --jobs-dir jobs-db
+        continue-on-error: true
 
       - name: recalc (contadores + TENDÊNCIA)
         run: python -m minerador recalc
@@ -60,12 +115,3 @@ jobs:
           git commit -m "estado: $(date -u '+%Y-%m-%d %H:%M UTC')" || echo "nada mudou"
           git pull --rebase --autostash || true
           git push || echo "push falhou (tenta na próxima)"
-
-      - name: guarda os logs de rejeição (auditoria)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rejeicoes-${{ github.run_number }}
-          path: data/raw/reject_*.txt
-          if-no-files-found: ignore
-          retention-days: 14

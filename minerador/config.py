@@ -59,6 +59,11 @@ class Config:
     notion_history_data_source_id: str = ""
     notion_write_history_snapshots: bool = False
     notion_token: str = ""
+    job: int = 0
+    jobs: int = 1
+    scroll_passes: list = field(default_factory=lambda: [24])
+    gemini_model: str = "gemini-2.5-flash-lite"
+    gemini_api_key: str = ""
 
     @classmethod
     def load(cls, path: Path | None = None) -> "Config":
@@ -119,6 +124,14 @@ class Config:
                 seen.add(lk)
                 reserve.append(k)
 
+        # jobs paralelos (nuvem): cada job minera só a sua fatia das palavras-chave
+        job = int(os.getenv("MINERADOR_JOB", "0") or 0)
+        jobs = max(1, int(os.getenv("MINERADOR_JOBS", "1") or 1))
+        if jobs > 1:
+            from .slicing import slice_for_job
+            kws = slice_for_job(kws, job, jobs)
+            reserve = slice_for_job(reserve, job, jobs)
+
         weights = dict(_DEFAULT_WEIGHTS)
         weights.update(raw.get("heat_weights") or {})
 
@@ -149,4 +162,9 @@ class Config:
             notion_history_data_source_id=str((raw.get("notion") or {}).get("history_data_source_id", "") or ""),
             notion_write_history_snapshots=bool((raw.get("notion") or {}).get("write_history_snapshots", False)),
             notion_token=os.getenv("NOTION_TOKEN", ""),
+            job=job,
+            jobs=jobs,
+            scroll_passes=[int(x) for x in (raw.get("scroll_passes") or [fetch.max_scrolls])],
+            gemini_model=str(raw.get("gemini_model", "gemini-2.5-flash-lite")),
+            gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         )

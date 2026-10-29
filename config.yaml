@@ -25,16 +25,18 @@ recycle_days: 0                # 0 = SEM reciclagem por idade (era 5: ~10 das ~1
 price_ceiling_brl: 97
 
 # Quantas ofertas NOVAS (nunca vistas antes) cada rodada tenta achar.
-daily_target: 35
+daily_target: 20
 
 # Quantas ofertas cada rodada MANDA pro Notion (novas desta rodada + backlog
 # de rodadas anteriores que ainda não subiu, ranqueadas por calor).
-sync_target: 35
+sync_target: 0               # 0 = manda TODAS as novas (não corta)
 
 # Palavras-chave por "janela". A rodada roda janela após janela (girando a lista)
 # até bater o daily_target, acabar as palavras-chave, ou estourar o tempo limite.
 keyword_window: 6
-run_deadline_min: 290          # tempo máximo de uma rodada (min) — teto de segurança
+scroll_passes: [24, 40, 60]   # 1ª passada = modo de hoje (já provado); depois mais fundo
+gemini_model: gemini-2.5-flash-lite   # nota 1-10 (GEMINI_API_KEY no GitHub Secrets)
+run_deadline_min: 315          # tempo máximo de uma rodada (min) — teto de segurança
                                # (minera até 35 validadas; só para antes se estourar isto)
                                # 240->290 (2026-09-14): workflow subiu timeout-minutes pra
                                # 345 (perto do teto real do Actions de 6h/360min); 290 deixa
@@ -320,6 +322,167 @@ keywords_niche_pt:
   - projetos de serralheria
   - projetos de metalon
   - plantas de casas
+  - planilha de fluxo de caixa
+  - planilha de controle de gastos pessoais
+  - planilha de contas a pagar
+  - planilha de vendas
+  - planilha de comissões
+  - planilha de ponto
+  - planilha de cronograma
+  - planilha de metas
+  - planilha de hábitos
+  - planilha de viagem
+  - planilha de reforma
+  - planilha de obra
+  - planilha para confeitaria
+  - planilha para salão de beleza
+  - planilha para loja
+  - planilha de clientes
+  - planilha de aluguel
+  - planilha de consórcio
+  - planilha de aposentadoria
+  - planilha de renda extra
+  - planilha de cotação
+  - planilha de treino hipertrofia
+  - planilha de dieta
+  - planilha de rotina
+  - planilha de estudos
+  - planilha de notas
+  - planilha de frequência escolar
+  - planilha para igreja
+  - planilha para condomínio
+  - planilha para autônomo
+  - ebook de receitas veganas
+  - ebook de receitas sem glúten
+  - ebook de sobremesas
+  - ebook de marmitas
+  - ebook de bolos
+  - ebook de salgados
+  - ebook de pães
+  - ebook de molhos
+  - ebook de sucos detox
+  - ebook de chás
+  - ebook de receitas para diabéticos
+  - ebook de receitas infantis
+  - ebook de lanches saudáveis
+  - ebook de receitas congeladas
+  - ebook de panificação
+  - ebook de brigadeiros
+  - ebook de trufas
+  - ebook de cupcakes
+  - ebook de fitness
+  - ebook de emagrecimento
+  - ebook de hipertrofia
+  - ebook de alongamento
+  - ebook de corrida
+  - ebook de caminhada
+  - ebook de ganho de massa
+  - ebook de saúde da mulher
+  - ebook de menopausa
+  - ebook de gravidez
+  - ebook de pós-parto
+  - ebook de alimentação infantil
+  - ebook de birra
+  - ebook de rotina infantil
+  - ebook de educação positiva
+  - ebook de leitura infantil
+  - ebook de alfabetização
+  - ebook de matemática
+  - ebook de inglês
+  - ebook de espanhol
+  - ebook de português
+  - ebook de redação
+  - ebook de oratória
+  - ebook de memória
+  - ebook de técnicas de estudo
+  - ebook de produtividade
+  - ebook de organização da casa
+  - ebook de limpeza
+  - ebook de decoração
+  - ebook de jardinagem
+  - ebook de horta em casa
+  - ebook de plantas
+  - ebook de orquídeas
+  - ebook de artesanato
+  - ebook de crochê
+  - ebook de bordado
+  - ebook de costura
+  - ebook de bijuterias
+  - ebook de velas
+  - ebook de sabonetes
+  - ebook de cosméticos naturais
+  - ebook de skincare
+  - ebook de cabelo
+  - ebook de maquiagem
+  - ebook de unhas
+  - ebook de dança
+  - ebook de violão
+  - ebook de teclado
+  - ebook de canto
+  - ebook de desenho
+  - ebook de pintura
+  - ebook de fotografia
+  - ebook de edição de vídeo
+  - ebook de canva
+  - ebook de excel
+  - ebook de power bi
+  - ebook de informática
+  - ebook de pesca
+  - ebook de camping
+  - ebook de churrasco
+  - ebook de cerveja artesanal
+  - ebook de café
+  - ebook de vinhos
+  - ebook de drinks
+  - ebook de oração
+  - ebook de versículos
+  - ebook de devocional diário
+  - ebook de casamento
+  - ebook de relacionamento
+  - ebook de autoconhecimento
+  - ebook de meditação
+  - ebook de mindfulness
+  - ebook de sono
+  - ebook de estresse
+  - ebook de culinária árabe
+  - ebook de culinária japonesa
+  - ebook de culinária italiana
+  - ebook de empreendedorismo
+  - ebook de vendas
+  - ebook de atendimento
+  - ebook de precificação
+  - ebook de instagram
+  - ebook de tráfego pago
+  - ebook de copywriting
+  - ebook de mei
+  - ebook de contabilidade
+  - ebook de imposto de renda
+  - ebook de concursos
+  - ebook de enem
+  - ebook de oab
+  - ebook de vestibular
+  - ebook de medicina
+  - ebook de enfermagem
+  - ebook de nutrição
+  - ebook de psicologia
+  - ebook de pedagogia
+  - ebook de direito
+  - ebook de engenharia
+  - ebook de arquitetura
+  - ebook de elétrica
+  - ebook de hidráulica
+  - ebook de pedreiro
+  - ebook de pintura de parede
+  - ebook de marcenaria
+  - ebook de soldagem
+  - ebook de mecânica
+  - ebook de motos
+  - ebook de carros
+  - ebook de pets
+  - ebook de gatos
+  - ebook de cachorros
+  - ebook de peixes
+  - ebook de aves
 keywords_niche_es:
   - planilla de gastos
   - planilla excel
@@ -345,6 +508,66 @@ keywords_niche_es:
   - kit imprimible
   - mapas mentales
   - manualidades pdf
+  - planilla de presupuesto
+  - planilla de inventario
+  - planilla de ventas
+  - planilla de gastos del hogar
+  - planilla de ahorro
+  - planilla de deudas
+  - planilla de rutina
+  - planilla de entrenamiento
+  - ebook de recetas fit
+  - ebook de postres
+  - ebook de panadería
+  - ebook de repostería
+  - ebook de cocina saludable
+  - ebook de dieta
+  - ebook de ejercicios
+  - ebook de maternidad
+  - ebook de crianza
+  - ebook de lactancia
+  - ebook de sueño infantil
+  - ebook de ansiedad
+  - ebook de autoestima
+  - ebook de finanzas
+  - ebook de inversiones
+  - ebook de emprendimiento
+  - ebook de marketing digital
+  - ebook de inglés
+  - ebook de costura
+  - ebook de crochet
+  - ebook de manualidades
+  - ebook de jardinería
+  - ebook de huerto
+  - ebook de carpintería
+  - plantillas de contratos
+  - plantillas de currículum
+  - plantillas de presentaciones
+  - plantillas de instagram
+  - plantillas de facturas
+  - plantillas de logos
+  - plantillas de invitaciones
+  - plantillas de planificación
+  - plantillas de etiquetas
+  - plantillas para docentes
+  - fichas para preescolar
+  - fichas de lectoescritura
+  - fichas de matemáticas
+  - libro de actividades
+  - material para maestros
+  - planeaciones didácticas
+  - moldes de ropa
+  - patrones de amigurumi
+  - patrones de tejido
+  - recetas para vender
+  - planificador de comidas
+  - plan de entrenamiento pdf
+  - guía de estudio pdf
+  - manual en pdf
+  - kit imprimible fiestas
+  - cuadernillo de actividades
+  - juegos didácticos imprimibles
+  - planner semanal imprimible
 keywords_niche_en:
   - budget template
   - google sheets template
@@ -362,6 +585,67 @@ keywords_niche_en:
   - wedding printables
   - planner printable
   - ebook bundle
+  - budget spreadsheet
+  - excel template
+  - google docs template
+  - resume templates
+  - cover letter template
+  - business plan template
+  - invoice template
+  - contract templates
+  - social media templates
+  - instagram templates
+  - pinterest templates
+  - etsy templates
+  - ebook template
+  - workbook printable
+  - journal printable
+  - habit tracker printable
+  - meal planner printable
+  - fitness tracker printable
+  - cleaning checklist printable
+  - wedding planner printable
+  - baby planner printable
+  - homeschool printables
+  - kids worksheets
+  - coloring book pdf
+  - activity book pdf
+  - sticker bundle
+  - svg bundle
+  - cricut svg
+  - embroidery patterns
+  - knitting patterns
+  - crochet patterns
+  - sewing patterns
+  - woodworking plans
+  - diy plans
+  - garden planner
+  - recipe ebook
+  - keto ebook
+  - vegan recipes ebook
+  - fitness ebook
+  - weight loss ebook
+  - yoga ebook
+  - meditation guide
+  - productivity planner
+  - goal planner
+  - digital journal
+  - notion template bundle
+  - notion second brain
+  - obsidian templates
+  - canva bundle templates
+  - lightroom presets
+  - photoshop actions
+  - procreate brushes
+  - font bundle
+  - logo templates
+  - mockup bundle
+  - prompt pack
+  - chatgpt prompts pdf
+  - ai prompts bundle
+  - plr digital products
+  - master resell rights
+  - digital planner goodnotes
 
 competitor_page_ids: []
 

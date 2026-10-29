@@ -387,10 +387,10 @@ def cmd_selftest(args) -> None:
         print("OK  Notion: conectou e as 7 colunas de nota existem")
     except Exception as e:
         ok = False
-        print(f"ERRO Notion: {e}")
+        print(f"::error::ERRO Notion: {e}")
     if not cfg.groq_api_key:
         ok = False
-        print("ERRO Groq: GROQ_API_KEY vazia (secret não chegou)")
+        print("::error::ERRO Groq: GROQ_API_KEY vazia (secret não chegou)")
     else:
         texto = ("Ebook com 30 receitas fit para quem trabalha o dia todo e quer emagrecer "
                  "sem passar fome. Antes: cansada e sem tempo. Depois: 5kg a menos em 30 dias. "
@@ -403,11 +403,11 @@ def cmd_selftest(args) -> None:
                 print(f"OK  Groq ({cfg.groq_model}): {notas} · média {nota.media(notas)}")
             else:
                 ok = False
-                print(f"ERRO Groq: respondeu fora do formato: {raw[:300]}")
+                print(f"::error::ERRO Groq: respondeu fora do formato: {raw[:300]}")
         except Exception as e:
             ok = False
             detalhe = e.read().decode()[:300] if hasattr(e, "read") else ""
-            print(f"ERRO Groq ({cfg.groq_model}): {e!r} {detalhe}")
+            print(f"::error::ERRO Groq ({cfg.groq_model}): {e!r} {detalhe}")
     print("TUDO CERTO" if ok else "TEM PROBLEMA (veja os ERRO acima)")
     if not ok:
         raise SystemExit(1)

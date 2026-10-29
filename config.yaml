@@ -17,7 +17,8 @@ active_status: active          # active | inactive | all
 
 # Reciclagem: oferta que saiu do Notion (você apagou) OU que não é tocada há
 # `recycle_days` dias volta a poder ser minerada. Impede o estoque de secar.
-recycle_days: 5
+recycle_days: 0                # 0 = SEM reciclagem por idade (era 5: ~10 das ~12 "mineradas" por dia eram
+                               # ofertas JÁ vistas voltando; só 0-6/dia eram novas de verdade)
 
 # Teto de "low ticket" — o filtro forte lê o preço na página de vendas e converte
 # pra BRL com câmbio do dia (minerador/fx.py). Acima disso: rejeita.
@@ -80,6 +81,11 @@ ignore_domains:
   - decokit.shop
   - facelessprokit.com
   - projeto-lte.vercel.app
+  # coaching / comunidade / SaaS / bot — saíram na mineração de 24-28/10
+  - skool.com
+  - designrr.io
+  - wppbot.site
+  - secondstream.co
 
 # Palavras-chave — enxutas e com foco em SINAL DE OFERTA low ticket.
 # Ordem importa: preço/oferta primeiro (a rodada para ao bater o daily_target).
@@ -199,6 +205,163 @@ keywords_reserve:
   - meal plan
   - resume template
   - $9
+
+# Nichos de low ticket (2026-10-29) — o pool antigo (~110 palavras) dava as MESMAS ofertas
+# todo dia (só 0-6 novas/dia). Estas entram no pool principal e giram pelo cursor.
+keywords_niche_pt:
+  # finanças / planilhas
+  - planilha de controle financeiro
+  - planilha de orçamento familiar
+  - planilha de estoque
+  - planilha de precificação
+  - planilha para mei
+  - planilha de dívidas
+  - planilha de treino
+  - planilha de marmitas
+  - planilha de investimentos
+  - planner financeiro
+  - ebook educação financeira
+  - ebook como sair das dívidas
+  # receitas / saúde
+  - receitas air fryer
+  - ebook air fryer
+  - receitas fit
+  - cardápio low carb
+  - cardápio anti-inflamatório
+  - marmitas fit
+  - bolo de pote receitas
+  - doces gourmet receitas
+  - receitas para vender
+  - receitas de pão caseiro
+  - jejum intermitente ebook
+  - ebook de dieta
+  - treino em casa pdf
+  - treino para glúteos pdf
+  - ebook yoga
+  - pilates em casa pdf
+  # educação / professores
+  - atividades de alfabetização
+  - atividades para autismo
+  - atividades tdah
+  - caça-palavras
+  - jogos pedagógicos
+  - material para professores
+  - plano de aula bncc
+  - sequência didática
+  - caderno de atividades
+  - atividades de matemática
+  - flashcards
+  - inglês para iniciantes pdf
+  - apostila de redação
+  - redação nota 1000
+  - resumos para concurso
+  - mapas mentais enem
+  - banco de questões
+  # artes / canva / social media
+  - kit canva
+  - templates canva instagram
+  - pack de posts
+  - artes para igreja
+  - artes para confeitaria
+  - artes para barbearia
+  - artes para hamburgueria
+  - artes para social media
+  - artes para nail designer
+  - logo editável
+  - pack de mockups
+  - artes para caneca
+  - arquivos de corte silhouette
+  - svg cricut
+  - topo de bolo
+  - lembrancinhas personalizadas
+  - convite editável
+  - scrapbook digital
+  # artesanato / beleza
+  - moldes de bolsa
+  - molde de costura
+  - apostila de crochê
+  - receitas de crochê
+  - gráficos ponto cruz
+  - amigurumi pdf
+  - apostila de bordado
+  - apostila de tricô
+  - moldes de biscuit
+  - apostila de unhas
+  - apostila de maquiagem
+  - apostila de sobrancelha
+  - apostila de barbearia
+  # família / fé / mente
+  - devocional pdf
+  - estudo bíblico pdf
+  - planner cristão
+  - planner de oração
+  - ebook gestante
+  - checklist enxoval bebê
+  - ebook introdução alimentar
+  - ebook sono do bebê
+  - ebook desfralde
+  - ebook amamentação
+  - ebook adestramento
+  - ebook autoestima
+  - ebook ansiedade
+  - diário de gratidão
+  # profissional
+  - modelos de contrato
+  - modelos de currículo
+  - modelos de proposta comercial
+  - modelos de orçamento
+  - modelo de tcc abnt
+  - modelos de slides
+  - modelos de petição
+  # projetos / faça-você-mesmo
+  - projetos de marcenaria
+  - projetos de móveis
+  - plano de corte
+  - projetos de serralheria
+  - projetos de metalon
+  - plantas de casas
+keywords_niche_es:
+  - planilla de gastos
+  - planilla excel
+  - recetario fitness
+  - recetas air fryer
+  - actividades preescolar
+  - fichas de trabajo
+  - material didáctico
+  - planificador semanal
+  - plantillas instagram
+  - plantillas canva negocio
+  - ebook recetas
+  - ebook ansiedad
+  - moldes de costura
+  - patrones de crochet
+  - patrones de costura pdf
+  - planos de carpintería
+  - planos de muebles
+  - proyectos de carpintería
+  - devocional cristiano pdf
+  - rutina de ejercicios pdf
+  - invitaciones editables
+  - kit imprimible
+  - mapas mentales
+  - manualidades pdf
+keywords_niche_en:
+  - budget template
+  - google sheets template
+  - etsy digital download
+  - plr ebook
+  - coloring pages printable
+  - bible study printable
+  - woodworking plans pdf
+  - sewing patterns pdf
+  - crochet pattern pdf
+  - meal prep guide
+  - workout plan pdf
+  - notion planner
+  - canva templates instagram
+  - wedding printables
+  - planner printable
+  - ebook bundle
 
 competitor_page_ids: []
 

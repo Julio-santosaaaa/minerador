@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS synced (
     days_active_max INTEGER,
     synced_at TEXT
 );
+CREATE TABLE IF NOT EXISTS blocked (
+    offer_key TEXT PRIMARY KEY,
+    page_id TEXT,
+    domain TEXT,
+    blocked_at TEXT
+);
 CREATE TABLE IF NOT EXISTS offer_history (
     offer_key TEXT NOT NULL,
     run_date TEXT NOT NULL,          -- YYYY-MM-DD (fuso America/Sao_Paulo, UTC-3)
@@ -213,6 +219,7 @@ def synced_keys(conn, exclude_stale_days: int = 0) -> set:
         keys.add(r["offer_key"])
     keys |= {r["offer_key"] for r in conn.execute(
         "SELECT offer_key FROM offers WHERE notion_page_id IS NOT NULL AND notion_page_id != ''")}
+    keys |= {r["offer_key"] for r in conn.execute("SELECT offer_key FROM blocked")}
     return keys
 
 
@@ -266,6 +273,44 @@ def forget_synced(conn, offer_keys) -> int:
     conn.execute(f"UPDATE offers SET notion_page_id=NULL WHERE offer_key IN ({q})", keys)
     conn.commit()
     return cur.rowcount
+
+
+def block_synced(conn, offer_keys) -> int:
+    """Oferta que o Julio apagou no Notion = reprovada: vai pra 'blocked' e NUNCA
+    mais é minerada (nem a mesma página de anunciante, nem o mesmo domínio)."""
+    keys = list(offer_keys)
+    if not keys:
+        return 0
+    ts = now_iso()
+    for k in keys:
+        page_id, _, domain = k.partition("|")
+        conn.execute("INSERT OR IGNORE INTO blocked (offer_key, page_id, domain, blocked_at) "
+                     "VALUES (?,?,?,?)", (k, page_id, domain, ts))
+    return forget_synced(conn, keys)
+
+
+def known_pages_and_domains(conn):
+    """(page_ids, domínios) de tudo que já foi pro Notion ou foi reprovado.
+    Evita a mesma oferta voltar com outro subdomínio/outro domínio do mesmo anunciante."""
+    pages, domains = set(), set()
+    for tbl in ("synced", "blocked"):
+        for r in conn.execute(f"SELECT offer_key FROM {tbl}"):
+            pid, _, dom = r["offer_key"].partition("|")
+            if pid and pid.isdigit():
+                pages.add(pid)
+            if dom and dom != "(sem link)":
+                domains.add(root_domain(dom))
+    return pages, domains
+
+
+def root_domain(dom: str) -> str:
+    parts = (dom or "").lower().split(".")
+    if len(parts) >= 3 and parts[-2] in ("com", "org", "net", "co") and len(parts[-1]) == 2:
+        return ".".join(parts[-3:])
+    if len(parts) >= 3 and ".".join(parts[-2:]) in (
+            "vercel.app", "lovable.app", "netlify.app", "pages.dev", "web.app"):
+        return dom.lower()        # hospedagem compartilhada: o subdomínio É a oferta
+    return ".".join(parts[-2:]) if len(parts) >= 2 else (dom or "").lower()
 
 
 def all_synced(conn):

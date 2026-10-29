@@ -16,7 +16,8 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from . import fx
-from .infoproduct import CHECKOUT_HOSTS, GENERIC_CHECKOUT_HOSTS, _host_matches
+from .infoproduct import (CHECKOUT_HOSTS, GENERIC_CHECKOUT_HOSTS, _PRODUCT_FORMAT_HINTS,
+                          _host_matches)
 
 _ECOMMERCE_MARKERS = (
     "cdn.shopify.com", "shopify.theme", "myshopify.com", "x-shopify-stage",
@@ -161,7 +162,9 @@ def evaluate(offer, page_data: dict, cfg, conn=None) -> Verdict:
                        detail="marcadores: " + ", ".join(saas_hits[:6])
                               + (f" · domínio app.: {_host(final_url)}" if saas_domain else ""))
     course_hits = [h for h in _COURSE_PAGE if h in ltext]
-    if len(course_hits) >= 2:
+    cheap_file = any(h in ltext for h in _PRODUCT_FORMAT_HINTS)
+    if len(course_hits) >= 2 or (not cheap_file and any(
+            w in ltext for w in ("mentoria", "coaching", "consultoria", "comunidade exclusiva"))):
         return Verdict(False, "página de curso (área de aluno / módulos)",
                        detail="termos: " + ", ".join(course_hits[:6]))
     phys_hits = [h for h in _PHYSICAL_PAGE if h in ltext]
@@ -179,7 +182,7 @@ def evaluate(offer, page_data: dict, cfg, conn=None) -> Verdict:
 
     prices = parse_prices(text, country)
     table = fx.rates(conn) if conn is not None else None
-    brls = [fx.to_brl(v, c, table) for v, c in prices]
+    brls = [b for b in (fx.to_brl(v, c, table) for v, c in prices) if b >= 5]  # <R$5 = ruído ("R$ 1 de desconto")
     min_brl = min(brls) if brls else None
 
     digital = any(h in ltext for h in _DIGITAL_DELIVERY)
@@ -198,7 +201,7 @@ def evaluate(offer, page_data: dict, cfg, conn=None) -> Verdict:
                        detail=prices_dbg)
 
     # sem preço na página
-    if (checkout or digital) and lowticket:
+    if (checkout and lowticket) or (digital and lowticket and cheap_file):
         return Verdict(True, "sem preço, mas checkout/entrega digital + sinal low ticket",
                        checkout_host=checkout,
                        detail=f"checkout={checkout or '-'} digital={digital} lowticket={lowticket}")

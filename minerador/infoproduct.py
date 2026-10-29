@@ -73,6 +73,12 @@ _COURSE_DOMAIN_WORDS = (
     "coaching", "curso", "cursos", "mentoria", "ensino", "masterclass",
     "treinamento", "formacao", "formação",
 )
+# Nome do anunciante que denuncia coaching/serviço/curso — rejeição dura
+_COURSE_PAGENAME = (
+    "coaching", "coach ", "mentoria", "consultoria", "academy", "academia",
+    "escola ", "escuela", "bootcamp", "imobiliária", "imobiliaria", "clínica",
+    "clinica", "advocacia", "tecnologia",
+)
 # Biz-opp / "renda extra" / oportunidade — Julio NÃO quer
 _BIZOPP = (
     "renda extra", "renda online", "trabalhe de casa", "trabalhe em casa",
@@ -174,6 +180,10 @@ def looks_like_infoproduct(offer) -> bool:
     # biz-opp / renda extra → fora
     if any(b in text for b in _BIZOPP) or any(b in full_dom for b in
                                               ("rendaextra", "trabalhedecasa", "ganhe")):
+        return False
+
+    pname = (offer.page_name or "").lower() + " "
+    if any(w in pname for w in _COURSE_PAGENAME):
         return False
 
     # curso no domínio (academy/escola/eduliv/bootcamp) → REJEIÇÃO DURA, sem escape

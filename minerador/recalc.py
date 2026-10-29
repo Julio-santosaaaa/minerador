@@ -167,7 +167,7 @@ def cmd_reconcile(args) -> None:
     conn = store.connect(DB_PATH)
     gone = [r["offer_key"] for r in store.all_synced(conn)
             if (r["notion_page_id"] or "").replace("-", "") not in live]
-    n = store.forget_synced(conn, gone)
+    n = store.block_synced(conn, gone)
     print(f"Notion tem {len(pages)} ofertas · {n} removidas do 'synced' "
           f"(apagadas por você no Notion → liberadas pra re-minerar).")
 

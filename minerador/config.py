@@ -101,6 +101,16 @@ class Config:
             if lk not in seen:
                 seen.add(lk)
                 kws.append(k)
+        # nichos (2026-10-29): listas por idioma -> entram no pool principal (a rotação
+        # por cursor cobre tudo) e já são registradas no roteamento por país (lang.py)
+        from . import lang
+        for lang_key, bucket in (("pt", lang._PT), ("es", lang._ES), ("en", lang._EN)):
+            for k in _clean(f"keywords_niche_{lang_key}"):
+                lk = k.lower()
+                bucket.add(lk)
+                if lk not in seen:
+                    seen.add(lk)
+                    kws.append(k)
         # reserva: dedup contra si mesma E contra as principais
         reserve = []
         for k in _clean("keywords_reserve"):

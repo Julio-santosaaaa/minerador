@@ -121,18 +121,21 @@ def _auto_reconcile(cfg, conn) -> None:
     live = {p["id"] for p in pages} | {p["id"].replace("-", "") for p in pages}
     gone = [r["offer_key"] for r in store.all_synced(conn)
             if (r["notion_page_id"] or "").replace("-", "") not in live]
-    n = store.forget_synced(conn, gone)
+    n = store.block_synced(conn, gone)
     if n:
-        print(f"  reciclagem: {n} oferta(s) apagada(s) do Notion voltaram pro pool")
+        print(f"  {n} oferta(s) apagada(s) do Notion foram pra lista de bloqueio (não voltam)")
 
 
 def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
-                  picked, picked_keys, all_ads, pool_name) -> int:
+                  picked, picked_keys, all_ads, pool_name,
+                  known_pages=None, known_domains=None) -> int:
     """Roda janelas de `kws` até picked>=target, keywords acabarem ou deadline.
     Cada candidato 9-99 anúncios passa pelo FILTRO FORTE (abre a página de vendas)
     antes de virar 'validado'. Devolve o cursor atualizado."""
     from . import progress
     from .salespage import evaluate
+    known_pages = set() if known_pages is None else known_pages      # mutáveis: valem pro pool reserva
+    known_domains = set() if known_domains is None else known_domains
     n_kw = len(kws)
     if not n_kw:
         return cursor
@@ -155,7 +158,9 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
         cands = build_offers(ads, ignore_domains=cfg.ignore_domains,
                              infoproduct_only=cfg.infoproduct_only)
         cands = [o for o in cands if o.key not in already
-                 and o.key not in picked_keys and o.ad_count >= 2]
+                 and o.key not in picked_keys and o.ad_count >= 2
+                 and not (o.page_id and o.page_id in known_pages)
+                 and store.root_domain(o.domain) not in known_domains]
         cands.sort(key=lambda o: (_verify_priority(o), -o.days_active_max))
         cap = min(max(target * 2, 16), 56)
         print(f"   {len(cands)} candidatos (verifica contagem de até {cap})")
@@ -205,6 +210,9 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
             lv = heat_level(h)
             picked.append((o, h, lv))
             picked_keys.add(o.key)
+            if o.page_id:
+                known_pages.add(o.page_id)
+            known_domains.add(store.root_domain(o.domain))
             price = f" · R$ {o.price_brl:.0f}" if o.price_brl else ""
             print(f"   ✓ {o.page_name[:24]:24} {o.domain[:26]:26} "
                   f"{o.ad_count:>3} ativos · calor {h}{price}")
@@ -240,6 +248,7 @@ def cmd_run(args) -> None:
     except Exception as e:
         print(f"  (reconcile pulado: {e})")
     already = store.synced_keys(conn, exclude_stale_days=cfg.recycle_days)
+    known_pages, known_domains = store.known_pages_and_domains(conn)
     run_id = store.start_run(conn, principal)
     cursor = int(store.kv_get(conn, "kw_cursor", "0") or 0)
 
@@ -247,14 +256,16 @@ def cmd_run(args) -> None:
     try:
         with Miner(cfg, RAW_DIR) as m:
             cursor = _process_pool(m, cfg, conn, principal, cursor, target, deadline,
-                                   already, picked, picked_keys, all_ads, "principal")
+                                   already, picked, picked_keys, all_ads, "principal",
+                                   known_pages, known_domains)
             store.kv_set(conn, "kw_cursor", cursor)
             if len(picked) < target and reserve and time.time() < deadline:
                 print(f"\n>> principal deu {len(picked)}/{target} validadas — "
                       f"abrindo o pool RESERVA ({len(reserve)} keywords)")
                 progress.set(phase="pool reserva")
                 _process_pool(m, cfg, conn, reserve, 0, target, deadline,
-                              already, picked, picked_keys, all_ads, "reserva")
+                              already, picked, picked_keys, all_ads, "reserva",
+                              known_pages, known_domains)
     except PlaywrightMissing as e:
         sys.exit(str(e))
 

@@ -51,6 +51,14 @@ CREATE TABLE IF NOT EXISTS blocked (
     domain TEXT,
     blocked_at TEXT
 );
+CREATE TABLE IF NOT EXISTS rejected (
+    page_id TEXT NOT NULL,
+    domain_root TEXT NOT NULL,
+    reason TEXT,
+    hard INTEGER DEFAULT 1,
+    rejected_at TEXT,
+    PRIMARY KEY (page_id, domain_root)
+);
 CREATE TABLE IF NOT EXISTS offer_history (
     offer_key TEXT NOT NULL,
     run_date TEXT NOT NULL,          -- YYYY-MM-DD (fuso America/Sao_Paulo, UTC-3)
@@ -289,6 +297,38 @@ def block_synced(conn, offer_keys) -> int:
     return forget_synced(conn, keys)
 
 
+HARD_REJECT_DAYS = 14
+SOFT_REJECT_DAYS = 2
+
+
+def reject(conn, page_id: str, domain: str, reason: str, hard: bool = True) -> None:
+    """Memoriza página de vendas rejeitada pra não reabri-la todo dia."""
+    conn.execute(
+        "INSERT OR REPLACE INTO rejected (page_id, domain_root, reason, hard, rejected_at) "
+        "VALUES (?,?,?,?,?)",
+        (page_id or "", root_domain(domain), reason, 1 if hard else 0, now_iso()))
+    conn.commit()
+
+
+def rejected_sets(conn):
+    """(page_ids, domínios raiz) com rejeição ainda válida (dura 14d, mole 2d)."""
+    now = datetime.now(timezone.utc)
+    pages, domains = set(), set()
+    for r in conn.execute("SELECT page_id, domain_root, hard, rejected_at FROM rejected"):
+        ttl = HARD_REJECT_DAYS if r["hard"] else SOFT_REJECT_DAYS
+        try:
+            at = datetime.fromisoformat(r["rejected_at"])
+        except (TypeError, ValueError):
+            continue
+        if now - at > timedelta(days=ttl):
+            continue
+        if r["page_id"]:
+            pages.add(r["page_id"])
+        if r["domain_root"]:
+            domains.add(r["domain_root"])
+    return pages, domains
+
+
 def known_pages_and_domains(conn):
     """(page_ids, domínios) de tudo que já foi pro Notion ou foi reprovado.
     Evita a mesma oferta voltar com outro subdomínio/outro domínio do mesmo anunciante."""
@@ -298,19 +338,34 @@ def known_pages_and_domains(conn):
             pid, _, dom = r["offer_key"].partition("|")
             if pid and pid.isdigit():
                 pages.add(pid)
-            if dom and dom != "(sem link)":
-                domains.add(root_domain(dom))
+            add_domain(domains, dom)
     return pages, domains
 
 
 def root_domain(dom: str) -> str:
-    parts = (dom or "").lower().split(".")
+    """Domínio raiz da oferta. Hosts COMPARTILHADOS (checkouts, hospedagem de LP,
+    redes sociais) devolvem "" — senão uma oferta em pay.hotmart.com bloquearia
+    todas as outras do Hotmart."""
+    from .infoproduct import CHECKOUT_HOSTS, GENERIC_CHECKOUT_HOSTS, LANDING_HOSTS, _host_matches
+    d = (dom or "").lower()
+    if not d or d == "(sem link)":
+        return ""
+    if _host_matches(d, CHECKOUT_HOSTS | GENERIC_CHECKOUT_HOSTS | LANDING_HOSTS | _SHARED_HOSTS):
+        return ""
+    parts = d.split(".")
     if len(parts) >= 3 and parts[-2] in ("com", "org", "net", "co") and len(parts[-1]) == 2:
         return ".".join(parts[-3:])
-    if len(parts) >= 3 and ".".join(parts[-2:]) in (
-            "vercel.app", "lovable.app", "netlify.app", "pages.dev", "web.app"):
-        return dom.lower()        # hospedagem compartilhada: o subdomínio É a oferta
-    return ".".join(parts[-2:]) if len(parts) >= 2 else (dom or "").lower()
+    return ".".join(parts[-2:]) if len(parts) >= 2 else d
+
+
+_SHARED_HOSTS = {"skool.com", "instagram.com", "facebook.com", "linktr.ee", "bit.ly",
+                 "wa.me", "t.me", "youtube.com", "tiktok.com", "google.com"}
+
+
+def add_domain(domains: set, dom: str) -> None:
+    r = root_domain(dom)
+    if r:
+        domains.add(r)
 
 
 def all_synced(conn):

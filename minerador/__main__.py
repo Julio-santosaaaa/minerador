@@ -136,6 +136,9 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
     from .salespage import evaluate
     known_pages = set() if known_pages is None else known_pages      # mutáveis: valem pro pool reserva
     known_domains = set() if known_domains is None else known_domains
+    rej_pages, rej_domains = store.rejected_sets(conn)
+    known_pages |= rej_pages
+    known_domains |= rej_domains
     n_kw = len(kws)
     if not n_kw:
         return cursor
@@ -160,7 +163,7 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
         cands = [o for o in cands if o.key not in already
                  and o.key not in picked_keys and o.ad_count >= 2
                  and not (o.page_id and o.page_id in known_pages)
-                 and store.root_domain(o.domain) not in known_domains]
+                 and (store.root_domain(o.domain) or "-") not in known_domains]
         cands.sort(key=lambda o: (_verify_priority(o), -o.days_active_max))
         cap = min(max(target * 2, 16), 56)
         print(f"   {len(cands)} candidatos (verifica contagem de até {cap})")
@@ -193,6 +196,8 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
                          verificando=o.page_name[:44], validadas=len(picked), target=target)
             data = m.open_salespage(o.link_url)
             if not data:
+                store.reject(conn, o.page_id, o.domain, "não abriu a página", hard=False)
+                store.add_domain(known_domains, o.domain)
                 progress.bump_reject("não abriu a página")
                 print(f"   – {o.page_name[:24]:24} {o.domain[:26]:26} — não abriu a página")
                 continue
@@ -200,6 +205,9 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
             o.price_brl, o.checkout_host = v.price_brl, v.checkout_host
             if not v.ok:
                 o.reject_reason = v.reason
+                store.reject(conn, o.page_id, o.domain, v.reason,
+                             hard=not v.reason.startswith("sem preço"))
+                store.add_domain(known_domains, o.domain)
                 progress.bump_reject(v.reason)
                 _dump_reject(o, data, v)
                 print(f"   – {o.page_name[:24]:24} {o.domain[:26]:26} — {v.reason}")
@@ -212,7 +220,7 @@ def _process_pool(m, cfg, conn, kws, cursor, target, deadline, already,
             picked_keys.add(o.key)
             if o.page_id:
                 known_pages.add(o.page_id)
-            known_domains.add(store.root_domain(o.domain))
+            store.add_domain(known_domains, o.domain)
             price = f" · R$ {o.price_brl:.0f}" if o.price_brl else ""
             print(f"   ✓ {o.page_name[:24]:24} {o.domain[:26]:26} "
                   f"{o.ad_count:>3} ativos · calor {h}{price}")
